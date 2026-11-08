@@ -6,7 +6,7 @@ const supabase = createClient(
   "sb_publishable_Am7kFgOwqUw6BWWwElm0pw_0nS_wzHP"
 );
 
-const AGENTS = ["Emeka Obi","Fatima Yusuf","Chidi Nwosu","Blessing Adeyemi","Musa Ibrahim","Ngozi Eze"];
+const DEFAULT_AGENTS = ["Emeka Obi","Fatima Yusuf","Chidi Nwosu","Blessing Adeyemi","Musa Ibrahim","Ngozi Eze"];
 
 function scoreColor(s) {
   if (s >= 75) return "#8b5cf6";
@@ -27,6 +27,8 @@ function tierClass(t) {
   return "pill-mass";
 }
 
+const EMPTY_LEAD = { name:"", phone:"", location:"", tier:"SME", score:50, source:"Manual", status:"New", agent:"", income:"", business_type:"", notes:"" };
+
 export default function App() {
   const [leads, setLeads]           = useState([]);
   const [filtered, setFiltered]     = useState([]);
@@ -39,6 +41,17 @@ export default function App() {
   const [toast, setToast]           = useState("");
   const [page, setPage]             = useState(1);
   const perPage = 10;
+
+  const [agents, setAgents] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("lf_agents")) || DEFAULT_AGENTS; }
+    catch { return DEFAULT_AGENTS; }
+  });
+  const [showAgentMgr, setShowAgentMgr] = useState(false);
+  const [newAgentName, setNewAgentName] = useState("");
+
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [newLead, setNewLead]         = useState(EMPTY_LEAD);
+  const [saving, setSaving]           = useState(false);
 
   useEffect(() => { fetchLeads(); }, []);
 
@@ -70,6 +83,39 @@ export default function App() {
     if (!error) { showToast("🏆 Marked as converted"); setSelected(null); fetchLeads(); }
   }
 
+  async function saveLead() {
+    if (!newLead.name.trim()) return showToast("Name is required");
+    setSaving(true);
+    const { error } = await supabase.from("leads").insert([{ ...newLead, score: Number(newLead.score) }]);
+    setSaving(false);
+    if (!error) {
+      showToast("✓ Lead added");
+      setNewLead(EMPTY_LEAD);
+      setShowAddLead(false);
+      fetchLeads();
+    } else {
+      showToast("Error saving lead");
+    }
+  }
+
+  function addAgent() {
+    const name = newAgentName.trim();
+    if (!name) return;
+    if (agents.includes(name)) return showToast("Agent already exists");
+    const updated = [...agents, name];
+    setAgents(updated);
+    localStorage.setItem("lf_agents", JSON.stringify(updated));
+    setNewAgentName("");
+    showToast(`✓ ${name} added`);
+  }
+
+  function removeAgent(name) {
+    const updated = agents.filter(a => a !== name);
+    setAgents(updated);
+    localStorage.setItem("lf_agents", JSON.stringify(updated));
+    showToast(`Removed ${name}`);
+  }
+
   function showToast(msg) {
     setToast(msg);
     setTimeout(() => setToast(""), 3000);
@@ -99,80 +145,97 @@ export default function App() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #0a0f1e; color: #f0f4ff; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
-        .top-bar { position: sticky; top: 0; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; background: rgba(10,15,30,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 100; }
-        .logo { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 19px; letter-spacing: 0em; }
+        .top-bar { position: sticky; top: 0; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; background: rgba(10,15,30,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 100; gap: 8px; }
+        .logo { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 18px; white-space: nowrap; }
         .logo span { color: #60a5fa; }
-        .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 7px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.14); background: #1a2235; color: #f0f4ff; cursor: pointer; transition: background 0.15s; white-space: nowrap; font-family: inherit; }
+        .top-actions { display: flex; gap: 6px; flex-wrap: nowrap; }
+        .btn { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 7px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.14); background: #1a2235; color: #f0f4ff; cursor: pointer; transition: background 0.15s; white-space: nowrap; font-family: inherit; }
         .btn:hover { background: #111827; }
         .btn-primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
         .btn-primary:hover { background: #2563eb; }
-        .page { padding: 20px; max-width: 1100px; margin: 0 auto; }
+        .btn-danger { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
+        .page { padding: 16px; max-width: 1100px; margin: 0 auto; }
         .section-label { font-size: 11px; font-weight: 500; color: #8899b8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 24px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 20px; }
         @media(min-width:600px){ .stat-grid { grid-template-columns: repeat(4,1fr); } }
-        .stat-box { background: #111827; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; }
-        .stat-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.02em; }
+        .stat-box { background: #111827; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; }
+        .stat-num { font-weight: 800; font-size: 26px; letter-spacing: -0.02em; }
         .stat-lbl { font-size: 11px; color: #8899b8; margin-top: 4px; }
-        .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .filters-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
         .filter-input, .filter-select { background: #111827; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; color: #f0f4ff; font-size: 13px; font-family: inherit; padding: 8px 12px; outline: none; }
-        .filter-input { flex: 1; min-width: 160px; }
+        .filter-input { flex: 1; min-width: 140px; }
         .filter-input::placeholder { color: #4a5a78; }
-        .table-wrap { background: #111827; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; overflow: hidden; }
-        .table-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .filter-select { min-width: 110px; }
+        .table-wrap { background: #111827; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; }
+        .table-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; gap: 8px; }
         .table-title { font-size: 13px; font-weight: 600; }
         .lead-count { font-size: 11px; color: #8899b8; background: #1a2235; padding: 3px 8px; border-radius: 20px; margin-left: 8px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        thead th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 500; color: #4a5a78; letter-spacing: 0.05em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); background: #1a2235; white-space: nowrap; }
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
+        thead th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 500; color: #4a5a78; letter-spacing: 0.05em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); background: #1a2235; white-space: nowrap; }
         tbody tr { border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: background 0.1s; }
         tbody tr:last-child { border-bottom: none; }
         tbody tr:hover { background: rgba(255,255,255,0.025); }
-        td { padding: 12px 16px; color: #8899b8; vertical-align: middle; }
-        td.name { color: #f0f4ff; font-weight: 500; }
+        td { padding: 11px 14px; color: #8899b8; vertical-align: middle; }
+        td.name { color: #f0f4ff; font-weight: 500; white-space: nowrap; }
         .pill { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
         .pill-corporate { background: rgba(139,92,246,0.15); color: #8b5cf6; }
         .pill-sme       { background: rgba(59,130,246,0.15);  color: #60a5fa; }
         .pill-mass      { background: rgba(16,185,129,0.15);  color: #10b981; }
-        .score-wrap { display: flex; align-items: center; gap: 8px; min-width: 80px; }
-        .score-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+        .score-wrap { display: flex; align-items: center; gap: 8px; min-width: 70px; }
+        .score-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; min-width: 36px; }
         .score-fill { height: 100%; border-radius: 2px; }
-        .status-dot { display: inline-flex; align-items: center; gap: 6px; }
+        .status-dot { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
         .dot-circle { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .pagination { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; gap: 8px; }
         .page-info { font-size: 12px; color: #8899b8; }
-        .page-btns { display: flex; gap: 6px; }
-        .page-btn { background: #1a2235; border: 1px solid rgba(255,255,255,0.08); color: #8899b8; font-size: 12px; font-family: inherit; padding: 5px 11px; border-radius: 7px; cursor: pointer; }
+        .page-btns { display: flex; gap: 5px; }
+        .page-btn { background: #1a2235; border: 1px solid rgba(255,255,255,0.08); color: #8899b8; font-size: 12px; font-family: inherit; padding: 5px 10px; border-radius: 7px; cursor: pointer; }
         .page-btn:hover { color: #f0f4ff; }
         .page-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
         .page-btn:disabled { opacity: 0.3; pointer-events: none; }
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; }
-        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(360px,100vw); background: #111827; border-left: 1px solid rgba(255,255,255,0.14); z-index: 201; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-        .drawer-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 20px; }
-        .drawer-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; gap: 12px; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; }
+        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px,100vw); background: #111827; border-left: 1px solid rgba(255,255,255,0.14); z-index: 201; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+        .drawer-name { font-weight: 700; font-size: 20px; }
+        .drawer-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; gap: 12px; }
         .drawer-row-label { color: #8899b8; font-size: 12px; flex-shrink: 0; }
         .drawer-row-value { color: #f0f4ff; font-weight: 500; text-align: right; }
         .assign-select { width: 100%; background: #1a2235; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; color: #f0f4ff; font-size: 13px; font-family: inherit; padding: 9px 12px; outline: none; cursor: pointer; margin-top: 4px; }
         .action-row { display: flex; gap: 8px; }
         .action-row .btn { flex: 1; justify-content: center; }
-        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a2235; border: 1px solid rgba(255,255,255,0.14); border-radius: 20px; padding: 10px 18px; font-size: 13px; color: #f0f4ff; z-index: 300; transition: transform 0.3s; white-space: nowrap; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
+        @media(min-width:600px){ .modal-overlay { align-items: center; } }
+        .modal { background: #111827; border: 1px solid rgba(255,255,255,0.14); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+        @media(min-width:600px){ .modal { border-radius: 20px; } }
+        .modal-title { font-size: 16px; font-weight: 700; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-label { font-size: 11px; color: #8899b8; text-transform: uppercase; letter-spacing: 0.06em; }
+        .form-input, .form-select, .form-textarea { background: #1a2235; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; color: #f0f4ff; font-size: 13px; font-family: inherit; padding: 9px 12px; outline: none; width: 100%; }
+        .form-input::placeholder { color: #4a5a78; }
+        .form-textarea { resize: vertical; min-height: 60px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .agent-list { display: flex; flex-direction: column; gap: 8px; }
+        .agent-item { display: flex; align-items: center; justify-content: space-between; background: #1a2235; border-radius: 10px; padding: 9px 12px; font-size: 13px; }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a2235; border: 1px solid rgba(255,255,255,0.14); border-radius: 20px; padding: 10px 18px; font-size: 13px; color: #f0f4ff; z-index: 400; transition: transform 0.3s; white-space: nowrap; }
         .toast.show { transform: translateX(-50%) translateY(0); }
         .empty { text-align: center; padding: 48px 24px; color: #8899b8; }
-        .top-actions { display: flex; gap: 8px; }
       `}</style>
 
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet" />
 
-      {/* TOP BAR */}
       <div className="top-bar">
         <div className="logo">Lead<span>Flow</span> NG</div>
         <div className="top-actions">
-          <button className="btn" onClick={exportCSV}>⬇ Export CSV</button>
-          <button className="btn btn-primary" onClick={fetchLeads}>↻ Refresh</button>
+          <button className="btn" onClick={() => setShowAgentMgr(true)}>👥 Agents</button>
+          <button className="btn btn-primary" onClick={() => setShowAddLead(true)}>+ Add Lead</button>
+          <button className="btn" onClick={exportCSV}>⬇ CSV</button>
+          <button className="btn" onClick={fetchLeads}>↻</button>
         </div>
       </div>
 
       <div className="page">
-        {/* STATS */}
-        <div className="section-label" style={{marginBottom:10}}>Today's summary</div>
+        <div className="section-label">Today's summary</div>
         <div className="stat-grid">
           <div className="stat-box"><div className="stat-num" style={{color:"#60a5fa"}}>{stats.total}</div><div className="stat-lbl">Total leads</div></div>
           <div className="stat-box"><div className="stat-num" style={{color:"#10b981"}}>{stats.newLeads}</div><div className="stat-lbl">New leads</div></div>
@@ -180,8 +243,7 @@ export default function App() {
           <div className="stat-box"><div className="stat-num" style={{color:"#f97316"}}>{stats.converted}</div><div className="stat-lbl">Converted</div></div>
         </div>
 
-        {/* FILTERS */}
-        <div className="filters">
+        <div className="filters-row">
           <input className="filter-input" placeholder="Search name, phone, location…" value={search} onChange={e => setSearch(e.target.value)} />
           <select className="filter-select" value={tierFilter} onChange={e => setTierFilter(e.target.value)}>
             <option value="">All tiers</option>
@@ -193,16 +255,15 @@ export default function App() {
           </select>
         </div>
 
-        {/* TABLE */}
         <div className="table-wrap">
           <div className="table-header">
             <div style={{display:"flex",alignItems:"center"}}>
               <span className="table-title">Lead database</span>
               <span className="lead-count">{filtered.length} leads</span>
             </div>
-            <span style={{fontSize:12,color:"#4a5a78"}}>Click a row for details</span>
+            <span style={{fontSize:12,color:"#4a5a78"}}>Tap a row for details</span>
           </div>
-          <div style={{overflowX:"auto"}}>
+          <div className="table-scroll">
             {loading ? (
               <div className="empty">Loading leads…</div>
             ) : filtered.length === 0 ? (
@@ -219,8 +280,8 @@ export default function App() {
                   {pageLeads.map(l => (
                     <tr key={l.id} onClick={() => { setSelected(l); setAssignAgent(l.agent || ""); }}>
                       <td className="name">{l.name}</td>
-                      <td style={{fontSize:12}}>{l.phone}</td>
-                      <td>{l.location}</td>
+                      <td style={{fontSize:12,whiteSpace:"nowrap"}}>{l.phone}</td>
+                      <td style={{whiteSpace:"nowrap"}}>{l.location}</td>
                       <td><span className={`pill ${tierClass(l.tier)}`}>{l.tier}</span></td>
                       <td>
                         <div className="score-wrap">
@@ -228,14 +289,14 @@ export default function App() {
                           <span style={{fontSize:12,fontWeight:600,color:scoreColor(l.score),minWidth:24,textAlign:"right"}}>{l.score}</span>
                         </div>
                       </td>
-                      <td style={{fontSize:12}}>{l.source}</td>
+                      <td style={{fontSize:12,whiteSpace:"nowrap"}}>{l.source}</td>
                       <td>
                         <div className="status-dot">
                           <div className="dot-circle" style={{background:statusColor(l.status)}}/>
                           {l.status}
                         </div>
                       </td>
-                      <td style={{fontSize:12,color:l.agent?"#f0f4ff":"#4a5a78"}}>{l.agent || "—"}</td>
+                      <td style={{fontSize:12,color:l.agent?"#f0f4ff":"#4a5a78",whiteSpace:"nowrap"}}>{l.agent || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -255,7 +316,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* DRAWER */}
       {selected && (
         <>
           <div className="overlay" onClick={() => setSelected(null)} />
@@ -276,17 +336,17 @@ export default function App() {
               ["Status", selected.status],
               ["Agent", selected.agent || "—"],
               ["Notes", selected.notes],
-            ].map(([label, value]) => (
+            ].map(([label, value]) => value ? (
               <div className="drawer-row" key={label}>
                 <span className="drawer-row-label">{label}</span>
                 <span className="drawer-row-value">{value}</span>
               </div>
-            ))}
+            ) : null)}
             <div>
               <div className="section-label">Assign to agent</div>
               <select className="assign-select" value={assignAgent} onChange={e => setAssignAgent(e.target.value)}>
                 <option value="">— Select agent —</option>
-                {AGENTS.map(a => <option key={a}>{a}</option>)}
+                {agents.map(a => <option key={a}>{a}</option>)}
               </select>
             </div>
             <div className="action-row">
@@ -298,7 +358,88 @@ export default function App() {
         </>
       )}
 
-      {/* TOAST */}
+      {showAddLead && (
+        <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setShowAddLead(false)}>
+          <div className="modal">
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span className="modal-title">Add New Lead</span>
+              <button className="btn" onClick={() => setShowAddLead(false)}>✕</button>
+            </div>
+            <div className="form-grid">
+              <div className="form-group" style={{gridColumn:"1/-1"}}>
+                <label className="form-label">Full Name *</label>
+                <input className="form-input" placeholder="e.g. Chukwuemeka Obi" value={newLead.name} onChange={e=>setNewLead(p=>({...p,name:e.target.value}))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Phone</label>
+                <input className="form-input" placeholder="08012345678" value={newLead.phone} onChange={e=>setNewLead(p=>({...p,phone:e.target.value}))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Location</label>
+                <input className="form-input" placeholder="Lekki, Lagos" value={newLead.location} onChange={e=>setNewLead(p=>({...p,location:e.target.value}))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Tier</label>
+                <select className="form-select" value={newLead.tier} onChange={e=>setNewLead(p=>({...p,tier:e.target.value}))}>
+                  <option>Corporate</option><option>SME</option><option>Mass Market</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">AI Score (0–100)</label>
+                <input className="form-input" type="number" min="0" max="100" value={newLead.score} onChange={e=>setNewLead(p=>({...p,score:e.target.value}))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Source</label>
+                <select className="form-select" value={newLead.source} onChange={e=>setNewLead(p=>({...p,source:e.target.value}))}>
+                  <option>Manual</option><option>Google Maps</option><option>CAC Registry</option><option>Facebook</option><option>Referral</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Income</label>
+                <input className="form-input" placeholder="e.g. ₦500k/month" value={newLead.income} onChange={e=>setNewLead(p=>({...p,income:e.target.value}))} />
+              </div>
+              <div className="form-group" style={{gridColumn:"1/-1"}}>
+                <label className="form-label">Business Type</label>
+                <input className="form-input" placeholder="e.g. Retail, Import/Export" value={newLead.business_type} onChange={e=>setNewLead(p=>({...p,business_type:e.target.value}))} />
+              </div>
+              <div className="form-group" style={{gridColumn:"1/-1"}}>
+                <label className="form-label">Notes</label>
+                <textarea className="form-textarea" placeholder="Any extra info…" value={newLead.notes} onChange={e=>setNewLead(p=>({...p,notes:e.target.value}))} />
+              </div>
+            </div>
+            <div className="action-row">
+              <button className="btn" onClick={() => setShowAddLead(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveLead} disabled={saving} style={{flex:2,justifyContent:"center"}}>
+                {saving ? "Saving…" : "✓ Save Lead"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAgentMgr && (
+        <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setShowAgentMgr(false)}>
+          <div className="modal">
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span className="modal-title">Manage Agents</span>
+              <button className="btn" onClick={() => setShowAgentMgr(false)}>✕</button>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <input className="form-input" placeholder="Agent full name" value={newAgentName} onChange={e=>setNewAgentName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addAgent()} />
+              <button className="btn btn-primary" onClick={addAgent}>+ Add</button>
+            </div>
+            <div className="agent-list">
+              {agents.map(a => (
+                <div className="agent-item" key={a}>
+                  <span>{a}</span>
+                  <button className="btn btn-danger" style={{padding:"4px 10px",fontSize:11}} onClick={() => removeAgent(a)}>Remove</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`toast${toast?" show":""}`}>{toast}</div>
     </>
   );
