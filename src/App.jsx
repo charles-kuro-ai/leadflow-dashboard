@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 // ── CHANGE THIS after deploying to Railway ──
-const API_URL = "https://your-api.railway.app";
+const API_URL = "https://leadflow-api-production-50e2.up.railway.app";
 
 const DEFAULT_AGENTS = ["Emeka Obi","Fatima Yusuf","Chidi Nwosu","Blessing Adeyemi","Musa Ibrahim","Ngozi Eze"];
 
