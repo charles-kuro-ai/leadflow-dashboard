@@ -8,69 +8,6 @@ const supabase = createClient(
 
 const API_URL = "https://leadflow-api-production-50e2.up.railway.app";
 
-// ── LOGIN SCREEN ──────────────────────────────────────────────────────────────
-function LoginScreen({ onLogin }) {
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-
-  async function handleLogin(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setError("Invalid email or password."); setLoading(false); }
-  }
-
-  return (
-    <div style={{
-      minHeight: "100vh", background: "#0c0c0c", display: "flex",
-      alignItems: "center", justifyContent: "center", padding: "20px",
-      fontFamily: "'DM Sans', sans-serif"
-    }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{width: "100%", maxWidth: 380}}>
-        <div style={{textAlign: "center", marginBottom: 36}}>
-          <div style={{fontWeight: 800, fontSize: 26, color: "#e5e5e5", letterSpacing: "-0.02em"}}>
-            Lead<span style={{color: "#fff"}}>Flow</span>
-          </div>
-          <div style={{fontSize: 13, color: "#525252", marginTop: 6}}>Sign in to your dashboard</div>
-        </div>
-        <form onSubmit={handleLogin} style={{display: "flex", flexDirection: "column", gap: 12}}>
-          <div style={{display: "flex", flexDirection: "column", gap: 5}}>
-            <label style={{fontSize: 11, color: "#525252", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600}}>Email</label>
-            <input
-              type="email" required value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              style={{background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 8, color: "#e5e5e5", fontSize: 14, fontFamily: "inherit", padding: "11px 12px", outline: "none", width: "100%"}}
-            />
-          </div>
-          <div style={{display: "flex", flexDirection: "column", gap: 5}}>
-            <label style={{fontSize: 11, color: "#525252", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600}}>Password</label>
-            <input
-              type="password" required value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              style={{background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 8, color: "#e5e5e5", fontSize: 14, fontFamily: "inherit", padding: "11px 12px", outline: "none", width: "100%"}}
-            />
-          </div>
-          {error && <div style={{fontSize: 13, color: "#ef4444", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 7, padding: "9px 12px"}}>{error}</div>}
-          <button type="submit" disabled={loading} style={{
-            marginTop: 4, background: "#fff", border: "none", borderRadius: 8, color: "#000",
-            fontWeight: 700, fontSize: 14, fontFamily: "inherit", padding: "12px",
-            cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1
-          }}>
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-        <div style={{textAlign: "center", marginTop: 24, fontSize: 12, color: "#333"}}>
-          LeadFlow Nigeria · Secure access only
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const DEFAULT_AGENTS = ["Emeka Obi","Fatima Yusuf","Chidi Nwosu","Blessing Adeyemi","Musa Ibrahim","Ngozi Eze"];
 
 const NIGERIAN_STATES = [
@@ -135,8 +72,139 @@ function tierColor(t) {
 
 const EMPTY_LEAD = { name:"", phone:"", location:"", tier:"SME", score:50, source:"Manual", status:"New", agent:"", income:"", business_type:"", notes:"" };
 
+// ── AUTH STYLES (shared) ──────────────────────────────────────────────────────
+const authStyle = {
+  page: { minHeight:"100vh", background:"#0c0c0c", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px", fontFamily:"'DM Sans',sans-serif" },
+  box:  { width:"100%", maxWidth:380 },
+  logo: { textAlign:"center", marginBottom:32 },
+  logoText: { fontWeight:800, fontSize:26, color:"#e5e5e5", letterSpacing:"-0.02em" },
+  logoSpan: { color:"#fff" },
+  sub:  { fontSize:13, color:"#525252", marginTop:6 },
+  form: { display:"flex", flexDirection:"column", gap:12 },
+  group: { display:"flex", flexDirection:"column", gap:5 },
+  label: { fontSize:11, color:"#525252", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:600 },
+  input: { background:"#1a1a1a", border:"1px solid #2a2a2a", borderRadius:8, color:"#e5e5e5", fontSize:14, fontFamily:"inherit", padding:"11px 12px", outline:"none", width:"100%" },
+  btn:   { marginTop:4, background:"#fff", border:"none", borderRadius:8, color:"#000", fontWeight:700, fontSize:14, fontFamily:"inherit", padding:"12px", cursor:"pointer" },
+  btnDisabled: { opacity:0.6, cursor:"not-allowed" },
+  err:  { fontSize:13, color:"#ef4444", background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:7, padding:"9px 12px" },
+  ok:   { fontSize:13, color:"#34d399", background:"rgba(52,211,153,0.08)", border:"1px solid rgba(52,211,153,0.2)", borderRadius:7, padding:"9px 12px" },
+  link: { textAlign:"center", marginTop:16, fontSize:13, color:"#525252" },
+  linkBtn: { background:"none", border:"none", color:"#a3a3a3", fontFamily:"inherit", fontSize:13, cursor:"pointer", textDecoration:"underline" },
+  foot: { textAlign:"center", marginTop:28, fontSize:12, color:"#2a2a2a" },
+};
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function LoginScreen({ onSwitch }) {
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoading(true); setError("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { setError("Invalid email or password."); setLoading(false); }
+  }
+
+  return (
+    <div style={authStyle.page}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={authStyle.box}>
+        <div style={authStyle.logo}>
+          <div style={authStyle.logoText}>Lead<span style={authStyle.logoSpan}>Flow</span></div>
+          <div style={authStyle.sub}>Sign in to your account</div>
+        </div>
+        <form onSubmit={handleLogin} style={authStyle.form}>
+          <div style={authStyle.group}>
+            <label style={authStyle.label}>Email</label>
+            <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={authStyle.input} />
+          </div>
+          <div style={authStyle.group}>
+            <label style={authStyle.label}>Password</label>
+            <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={authStyle.input} />
+          </div>
+          {error && <div style={authStyle.err}>{error}</div>}
+          <button type="submit" disabled={loading} style={{...authStyle.btn, ...(loading?authStyle.btnDisabled:{})}}>
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+        <div style={authStyle.link}>
+          No account? <button style={authStyle.linkBtn} onClick={onSwitch}>Create one</button>
+        </div>
+        <div style={authStyle.foot}>LeadFlow Nigeria · Secure access only</div>
+      </div>
+    </div>
+  );
+}
+
+// ── SIGNUP ────────────────────────────────────────────────────────────────────
+function SignupScreen({ onSwitch }) {
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm]   = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [done, setDone]         = useState(false);
+
+  async function handleSignup(e) {
+    e.preventDefault();
+    if (password.length < 8) return setError("Password must be at least 8 characters.");
+    if (password !== confirm) return setError("Passwords do not match.");
+    setLoading(true); setError("");
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) { setError(error.message); setLoading(false); }
+    else setDone(true);
+  }
+
+  return (
+    <div style={authStyle.page}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={authStyle.box}>
+        <div style={authStyle.logo}>
+          <div style={authStyle.logoText}>Lead<span style={authStyle.logoSpan}>Flow</span></div>
+          <div style={authStyle.sub}>Create your account</div>
+        </div>
+        {done ? (
+          <>
+            <div style={authStyle.ok}>Account created! Check your email to confirm, then sign in.</div>
+            <div style={authStyle.link}><button style={authStyle.linkBtn} onClick={onSwitch}>Back to sign in</button></div>
+          </>
+        ) : (
+          <>
+            <form onSubmit={handleSignup} style={authStyle.form}>
+              <div style={authStyle.group}>
+                <label style={authStyle.label}>Email</label>
+                <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={authStyle.input} />
+              </div>
+              <div style={authStyle.group}>
+                <label style={authStyle.label}>Password</label>
+                <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Min. 8 characters" style={authStyle.input} />
+              </div>
+              <div style={authStyle.group}>
+                <label style={authStyle.label}>Confirm password</label>
+                <input type="password" required value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Repeat password" style={authStyle.input} />
+              </div>
+              {error && <div style={authStyle.err}>{error}</div>}
+              <button type="submit" disabled={loading} style={{...authStyle.btn, ...(loading?authStyle.btnDisabled:{})}}>
+                {loading ? "Creating account…" : "Create account"}
+              </button>
+            </form>
+            <div style={authStyle.link}>
+              Already have an account? <button style={authStyle.linkBtn} onClick={onSwitch}>Sign in</button>
+            </div>
+          </>
+        )}
+        <div style={authStyle.foot}>LeadFlow Nigeria · Secure access only</div>
+      </div>
+    </div>
+  );
+}
+
+// ── ROOT ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [session, setSession] = useState(undefined); // undefined = checking, null = logged out
+  const [session, setSession] = useState(undefined);
+  const [showSignup, setShowSignup] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -144,13 +212,19 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (session === undefined) return null; // still checking
-  if (!session) return <LoginScreen />;
-
-  return <Dashboard onLogout={() => supabase.auth.signOut()} />;
+  if (session === undefined) return null;
+  if (!session) {
+    return showSignup
+      ? <SignupScreen onSwitch={() => setShowSignup(false)} />
+      : <LoginScreen onSwitch={() => setShowSignup(true)} />;
+  }
+  return <Dashboard session={session} onLogout={() => supabase.auth.signOut()} />;
 }
 
-function Dashboard({ onLogout }) {
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function Dashboard({ session, onLogout }) {
+  const userId = session.user.id;
+
   const [leads, setLeads]         = useState([]);
   const [filtered, setFiltered]   = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -174,7 +248,7 @@ function Dashboard({ onLogout }) {
   const [statClick, setStatClick]     = useState("");
 
   const [agents, setAgents] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("lf_agents")) || DEFAULT_AGENTS; }
+    try { return JSON.parse(localStorage.getItem("lf_agents_" + userId)) || DEFAULT_AGENTS; }
     catch { return DEFAULT_AGENTS; }
   });
   const [showAgentMgr, setShowAgentMgr] = useState(false);
@@ -262,7 +336,7 @@ function Dashboard({ onLogout }) {
   async function saveLead() {
     if (!newLead.name.trim()) return showToast("Name is required");
     setSaving(true);
-    const { error } = await supabase.from("leads").insert([{ ...newLead, score: Number(newLead.score) }]);
+    const { error } = await supabase.from("leads").insert([{ ...newLead, score: Number(newLead.score), user_id: userId }]);
     setSaving(false);
     if (!error) { showToast("Lead added"); setNewLead(EMPTY_LEAD); setShowAddLead(false); fetchLeads(); }
     else showToast("Error saving lead");
@@ -272,10 +346,15 @@ function Dashboard({ onLogout }) {
     if (!scrapeConfig.cities.length) return showToast("Select at least one state");
     if (!scrapeConfig.business_types.length) return showToast("Select at least one business type");
     try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const token = currentSession?.access_token;
       const r = await fetch(`${API_URL}/scrape`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scrapeConfig)
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...scrapeConfig })
       });
       const data = await r.json();
       if (data.job_id) {
@@ -314,7 +393,7 @@ function Dashboard({ onLogout }) {
     if (agents.includes(name)) return showToast("Agent already exists");
     const updated = [...agents, name];
     setAgents(updated);
-    localStorage.setItem("lf_agents", JSON.stringify(updated));
+    localStorage.setItem("lf_agents_" + userId, JSON.stringify(updated));
     setNewAgentName("");
     showToast(name + " added");
   }
@@ -322,7 +401,7 @@ function Dashboard({ onLogout }) {
   function removeAgent(name) {
     const updated = agents.filter(a => a !== name);
     setAgents(updated);
-    localStorage.setItem("lf_agents", JSON.stringify(updated));
+    localStorage.setItem("lf_agents_" + userId, JSON.stringify(updated));
   }
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(""), 3500); }
@@ -378,7 +457,6 @@ function Dashboard({ onLogout }) {
 
         .top-bar { position: sticky; top: 0; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; background: rgba(12,12,12,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid #1f1f1f; z-index: 100; gap: 8px; flex-wrap: wrap; }
         .logo { font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: #e5e5e5; white-space: nowrap; }
-        .logo span { color: #fff; }
         .top-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
         .btn { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 7px 13px; border-radius: 8px; border: 1px solid #2a2a2a; background: #1a1a1a; color: #d4d4d4; cursor: pointer; transition: background 0.15s, border-color 0.15s; white-space: nowrap; font-family: inherit; }
@@ -389,6 +467,8 @@ function Dashboard({ onLogout }) {
         .btn-danger:hover { background: #2a1a1a; }
         .btn-red { background: #ef4444; border-color: #ef4444; color: #fff; font-weight: 600; }
         .btn-red:hover { background: #dc2626; }
+        .btn-signout { color: #525252; }
+        .btn-signout:hover { color: #ef4444; border-color: #3a1a1a; }
 
         .page { padding: 16px; max-width: 1200px; margin: 0 auto; }
         .section-label { font-size: 11px; font-weight: 500; color: #525252; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
@@ -435,7 +515,6 @@ function Dashboard({ onLogout }) {
         input[type="checkbox"] { width: 14px; height: 14px; accent-color: #fff; cursor: pointer; }
 
         .pill { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
-
         .score-wrap { display: flex; align-items: center; gap: 7px; min-width: 70px; }
         .score-bar { flex: 1; height: 3px; background: #1f1f1f; border-radius: 2px; overflow: hidden; min-width: 36px; }
         .score-fill { height: 100%; border-radius: 2px; background: #404040; }
@@ -473,21 +552,20 @@ function Dashboard({ onLogout }) {
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .agent-list { display: flex; flex-direction: column; gap: 7px; }
         .agent-item { display: flex; align-items: center; justify-content: space-between; background: #0c0c0c; border: 1px solid #1f1f1f; border-radius: 7px; padding: 8px 12px; font-size: 13px; color: #d4d4d4; }
-
         .edit-input { background: #0c0c0c; border: 1px solid #2a2a2a; border-radius: 7px; color: #d4d4d4; font-size: 12px; font-family: inherit; padding: 6px 9px; outline: none; width: 100%; }
         .edit-select { background: #0c0c0c; border: 1px solid #2a2a2a; border-radius: 7px; color: #d4d4d4; font-size: 12px; font-family: inherit; padding: 6px 9px; outline: none; width: 100%; }
 
-        /* Confirm popup */
         .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .confirm-modal { background: #161616; border: 1px solid #2a2a2a; border-radius: 12px; padding: 24px; max-width: 340px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
         .confirm-title { font-size: 15px; font-weight: 700; color: #e5e5e5; }
         .confirm-body { font-size: 13px; color: #737373; line-height: 1.5; }
         .confirm-actions { display: flex; gap: 8px; }
 
-        /* Find Leads */
         .progress-bar-wrap { background: #1f1f1f; border-radius: 6px; height: 6px; overflow: hidden; }
         .progress-bar-fill { height: 100%; background: #fff; border-radius: 6px; transition: width 0.4s; }
         .scrape-status { background: #0c0c0c; border: 1px solid #1f1f1f; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+        .user-email { font-size: 11px; color: #3a3a3a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
 
         .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #fff; border-radius: 8px; padding: 10px 18px; font-size: 12px; font-weight: 600; color: #000; z-index: 500; transition: transform 0.3s; white-space: nowrap; }
         .toast.show { transform: translateX(-50%) translateY(0); }
@@ -496,21 +574,20 @@ function Dashboard({ onLogout }) {
 
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-      {/* TOP BAR */}
       <div className="top-bar">
-        <div className="logo">Lead<span>Flow</span></div>
+        <div className="logo">LeadFlow</div>
         <div className="top-actions">
+          <span className="user-email">{session.user.email}</span>
           <button className="btn" onClick={() => setShowFindLeads(true)}>Find Leads</button>
           <button className="btn" onClick={() => setShowAgentMgr(true)}>Agents</button>
           <button className="btn btn-primary" onClick={() => setShowAddLead(true)}>+ Add Lead</button>
           <button className="btn" onClick={exportCSV}>Export CSV</button>
           <button className="btn" onClick={fetchLeads}>↻</button>
-          <button className="btn" onClick={onLogout} style={{color:"#ef4444"}}>Sign out</button>
+          <button className="btn btn-signout" onClick={onLogout}>Sign out</button>
         </div>
       </div>
 
       <div className="page">
-        {/* STAT CARDS */}
         <div className="section-label">{hasActiveFilters ? `Filtered — ${filtered.length} of ${leads.length} leads` : "Overview"}</div>
         <div className="stat-grid">
           <div className={`stat-box${!statClick&&!hasActiveFilters?" active":""}`} onClick={clearAllFilters}>
@@ -531,7 +608,6 @@ function Dashboard({ onLogout }) {
           </div>
         </div>
 
-        {/* FILTERS */}
         <div className="filters-section">
           <div className="filters-top">
             <span className="filters-title">Filters</span>
@@ -561,7 +637,6 @@ function Dashboard({ onLogout }) {
           </div>
         </div>
 
-        {/* BULK BAR */}
         {selectedIds.size > 0 && (
           <div className="bulk-bar">
             <span>{selectedIds.size} selected</span>
@@ -570,7 +645,6 @@ function Dashboard({ onLogout }) {
           </div>
         )}
 
-        {/* TABLE */}
         <div className="table-wrap">
           <div className="table-header">
             <div style={{display:"flex",alignItems:"center"}}>
@@ -583,7 +657,7 @@ function Dashboard({ onLogout }) {
             {loading ? (
               <div className="empty">Loading…</div>
             ) : filtered.length === 0 ? (
-              <div className="empty">No leads match your filters</div>
+              <div className="empty">No leads yet — use Find Leads or Add Lead to get started</div>
             ) : (
               <table>
                 <thead>
@@ -637,12 +711,11 @@ function Dashboard({ onLogout }) {
         </div>
       </div>
 
-      {/* CONFIRM DELETE POPUP */}
       {confirmDelete && (
         <div className="confirm-overlay" onClick={e => e.target===e.currentTarget && setConfirmDelete(false)}>
           <div className="confirm-modal">
             <div className="confirm-title">Delete {selectedIds.size} lead{selectedIds.size>1?"s":""}?</div>
-            <div className="confirm-body">This action cannot be undone. The selected leads will be permanently removed from your database.</div>
+            <div className="confirm-body">This cannot be undone. Selected leads will be permanently removed.</div>
             <div className="confirm-actions">
               <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={() => setConfirmDelete(false)}>Cancel</button>
               <button className="btn btn-red" style={{flex:1,justifyContent:"center"}} onClick={deleteSelected}>Delete</button>
@@ -651,7 +724,6 @@ function Dashboard({ onLogout }) {
         </div>
       )}
 
-      {/* DETAIL / EDIT DRAWER */}
       {selected && (
         <>
           <div className="overlay" onClick={() => { setSelected(null); setEditMode(false); }} />
@@ -660,7 +732,6 @@ function Dashboard({ onLogout }) {
               <span className="section-label" style={{margin:0}}>{editMode ? "Edit Lead" : "Lead Detail"}</span>
               <button className="btn" style={{padding:"5px 10px"}} onClick={() => { setSelected(null); setEditMode(false); }}>✕</button>
             </div>
-
             {editMode ? (
               <>
                 <div className="form-grid">
@@ -709,12 +780,12 @@ function Dashboard({ onLogout }) {
               <>
                 <div className="drawer-name">{selected.name}</div>
                 {[
-                  ["Phone", selected.phone],["Location", selected.location],
-                  ["Tier", selected.tier],["Business", selected.business_type],
-                  ["Income", selected.income],["Score", `${selected.score}/100`],
-                  ["Source", selected.source],["Status", selected.status],
-                  ["Agent", selected.agent||"—"],["Notes", selected.notes],
-                ].map(([label, value]) => value ? (
+                  ["Phone",selected.phone],["Location",selected.location],
+                  ["Tier",selected.tier],["Business",selected.business_type],
+                  ["Income",selected.income],["Score",`${selected.score}/100`],
+                  ["Source",selected.source],["Status",selected.status],
+                  ["Agent",selected.agent||"—"],["Notes",selected.notes],
+                ].map(([label,value]) => value ? (
                   <div className="drawer-row" key={label}>
                     <span className="drawer-row-label">{label}</span>
                     <span className="drawer-row-value">{value}</span>
@@ -741,7 +812,6 @@ function Dashboard({ onLogout }) {
         </>
       )}
 
-      {/* FIND LEADS MODAL */}
       {showFindLeads && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setShowFindLeads(false)}>
           <div className="modal">
@@ -749,78 +819,59 @@ function Dashboard({ onLogout }) {
               <span className="modal-title">Find New Leads</span>
               <button className="btn" style={{padding:"5px 10px"}} onClick={() => setShowFindLeads(false)}>✕</button>
             </div>
-
             {scrapeStatus ? (
               <div className="scrape-status">
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontWeight:600,color:"#e5e5e5",fontSize:14}}>{scrapeStatus.status === "done" ? "Done" : "Scraping…"}</span>
-                  <span style={{fontSize:13,color:"#737373"}}>{scrapeStatus.added || 0} leads added</span>
+                  <span style={{fontWeight:600,color:"#e5e5e5",fontSize:14}}>{scrapeStatus.status==="done"?"Done":"Scraping…"}</span>
+                  <span style={{fontSize:13,color:"#737373"}}>{scrapeStatus.added||0} leads added</span>
                 </div>
                 <div className="progress-bar-wrap">
                   <div className="progress-bar-fill" style={{width:`${scrapeStatus.progress||0}%`}} />
                 </div>
                 <span style={{fontSize:12,color:"#525252"}}>{scrapeStatus.progress||0}% complete</span>
-                {scrapeStatus.status !== "done" && (
-                  <button className="btn btn-danger" onClick={cancelScrape}>Cancel</button>
-                )}
-                {scrapeStatus.status === "done" && (
-                  <button className="btn btn-primary" onClick={() => { setScrapeStatus(null); setScrapeJob(null); }}>Search again</button>
-                )}
+                {scrapeStatus.status!=="done" && <button className="btn btn-danger" onClick={cancelScrape}>Cancel</button>}
+                {scrapeStatus.status==="done" && <button className="btn btn-primary" onClick={()=>{setScrapeStatus(null);setScrapeJob(null);}}>Search again</button>}
               </div>
             ) : (
               <>
                 <div className="form-group">
                   <label className="form-label">State</label>
-                  <select className="form-select" onChange={e => {
-                    const val = e.target.value;
-                    if (val && !scrapeConfig.cities.includes(val))
-                      setScrapeConfig(p => ({...p, cities: [...p.cities, val]}));
-                  }}>
+                  <select className="form-select" onChange={e=>{const v=e.target.value;if(v&&!scrapeConfig.cities.includes(v))setScrapeConfig(p=>({...p,cities:[...p.cities,v]}));}}>
                     <option value="">— Select a state —</option>
-                    {NIGERIAN_STATES.map(s => <option key={s}>{s}</option>)}
+                    {NIGERIAN_STATES.map(s=><option key={s}>{s}</option>)}
                   </select>
-                  {scrapeConfig.cities.length > 0 && (
+                  {scrapeConfig.cities.length>0&&(
                     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
-                      {scrapeConfig.cities.map(c => (
+                      {scrapeConfig.cities.map(c=>(
                         <span key={c} style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:5,padding:"3px 8px",fontSize:11,color:"#a3a3a3",display:"flex",alignItems:"center",gap:5}}>
-                          {c}
-                          <span style={{cursor:"pointer",color:"#525252"}} onClick={() => setScrapeConfig(p => ({...p, cities: p.cities.filter(x=>x!==c)}))}>✕</span>
+                          {c}<span style={{cursor:"pointer",color:"#525252"}} onClick={()=>setScrapeConfig(p=>({...p,cities:p.cities.filter(x=>x!==c)}))}>✕</span>
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Business Type</label>
-                  <select className="form-select" onChange={e => {
-                    const val = e.target.value;
-                    if (val && !scrapeConfig.business_types.includes(val))
-                      setScrapeConfig(p => ({...p, business_types: [...p.business_types, val]}));
-                  }}>
+                  <select className="form-select" onChange={e=>{const v=e.target.value;if(v&&!scrapeConfig.business_types.includes(v))setScrapeConfig(p=>({...p,business_types:[...p.business_types,v]}));}}>
                     <option value="">— Select a business type —</option>
-                    {BUSINESS_TYPES.map(b => <option key={b}>{b}</option>)}
+                    {BUSINESS_TYPES.map(b=><option key={b}>{b}</option>)}
                   </select>
-                  {scrapeConfig.business_types.length > 0 && (
+                  {scrapeConfig.business_types.length>0&&(
                     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
-                      {scrapeConfig.business_types.map(b => (
+                      {scrapeConfig.business_types.map(b=>(
                         <span key={b} style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:5,padding:"3px 8px",fontSize:11,color:"#a3a3a3",display:"flex",alignItems:"center",gap:5}}>
-                          {b}
-                          <span style={{cursor:"pointer",color:"#525252"}} onClick={() => setScrapeConfig(p => ({...p, business_types: p.business_types.filter(x=>x!==b)}))}>✕</span>
+                          {b}<span style={{cursor:"pointer",color:"#525252"}} onClick={()=>setScrapeConfig(p=>({...p,business_types:p.business_types.filter(x=>x!==b)}))}>✕</span>
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Max results per search (1–20)</label>
-                  <input className="form-input" type="number" min="1" max="20" value={scrapeConfig.max_per_search}
-                    onChange={e => setScrapeConfig(p => ({...p, max_per_search: Number(e.target.value)}))} />
+                  <input className="form-input" type="number" min="1" max="20" value={scrapeConfig.max_per_search} onChange={e=>setScrapeConfig(p=>({...p,max_per_search:Number(e.target.value)}))} />
                 </div>
-
                 <div className="action-row">
-                  <button className="btn" onClick={() => setShowFindLeads(false)}>Cancel</button>
+                  <button className="btn" onClick={()=>setShowFindLeads(false)}>Cancel</button>
                   <button className="btn btn-primary" onClick={startScrape} style={{flex:2,justifyContent:"center"}}>Start Finding Leads</button>
                 </div>
               </>
@@ -829,13 +880,12 @@ function Dashboard({ onLogout }) {
         </div>
       )}
 
-      {/* ADD LEAD MODAL */}
       {showAddLead && (
-        <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setShowAddLead(false)}>
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowAddLead(false)}>
           <div className="modal">
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <span className="modal-title">Add New Lead</span>
-              <button className="btn" style={{padding:"5px 10px"}} onClick={() => setShowAddLead(false)}>✕</button>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowAddLead(false)}>✕</button>
             </div>
             <div className="form-grid">
               <div className="form-group" style={{gridColumn:"1/-1"}}>
@@ -872,40 +922,37 @@ function Dashboard({ onLogout }) {
               </div>
               <div className="form-group" style={{gridColumn:"1/-1"}}>
                 <label className="form-label">Business Type</label>
-                <input className="form-input" placeholder="e.g. Retail, Import/Export" value={newLead.business_type} onChange={e=>setNewLead(p=>({...p,business_type:e.target.value}))} />
+                <input className="form-input" placeholder="e.g. Retail" value={newLead.business_type} onChange={e=>setNewLead(p=>({...p,business_type:e.target.value}))} />
               </div>
               <div className="form-group" style={{gridColumn:"1/-1"}}>
                 <label className="form-label">Notes</label>
-                <textarea className="form-textarea" placeholder="Any extra info…" value={newLead.notes} onChange={e=>setNewLead(p=>({...p,notes:e.target.value}))} />
+                <textarea className="form-textarea" value={newLead.notes} onChange={e=>setNewLead(p=>({...p,notes:e.target.value}))} />
               </div>
             </div>
             <div className="action-row">
-              <button className="btn" onClick={() => setShowAddLead(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={saveLead} disabled={saving} style={{flex:2,justifyContent:"center"}}>
-                {saving ? "Saving…" : "Save Lead"}
-              </button>
+              <button className="btn" onClick={()=>setShowAddLead(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveLead} disabled={saving} style={{flex:2,justifyContent:"center"}}>{saving?"Saving…":"Save Lead"}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MANAGE AGENTS */}
       {showAgentMgr && (
-        <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setShowAgentMgr(false)}>
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowAgentMgr(false)}>
           <div className="modal">
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <span className="modal-title">Manage Agents</span>
-              <button className="btn" style={{padding:"5px 10px"}} onClick={() => setShowAgentMgr(false)}>✕</button>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowAgentMgr(false)}>✕</button>
             </div>
             <div style={{display:"flex",gap:7}}>
               <input className="form-input" placeholder="Agent full name" value={newAgentName} onChange={e=>setNewAgentName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addAgent()} />
               <button className="btn btn-primary" onClick={addAgent}>Add</button>
             </div>
             <div className="agent-list">
-              {agents.map(a => (
+              {agents.map(a=>(
                 <div className="agent-item" key={a}>
                   <span>{a}</span>
-                  <button className="btn btn-danger" style={{padding:"4px 10px",fontSize:11}} onClick={() => removeAgent(a)}>Remove</button>
+                  <button className="btn btn-danger" style={{padding:"4px 10px",fontSize:11}} onClick={()=>removeAgent(a)}>Remove</button>
                 </div>
               ))}
             </div>
@@ -917,4 +964,3 @@ function Dashboard({ onLogout }) {
     </>
   );
 }
-
