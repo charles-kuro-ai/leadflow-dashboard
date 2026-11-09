@@ -8,6 +8,69 @@ const supabase = createClient(
 
 const API_URL = "https://leadflow-api-production-50e2.up.railway.app";
 
+// ── LOGIN SCREEN ──────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { setError("Invalid email or password."); setLoading(false); }
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#0c0c0c", display: "flex",
+      alignItems: "center", justifyContent: "center", padding: "20px",
+      fontFamily: "'DM Sans', sans-serif"
+    }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{width: "100%", maxWidth: 380}}>
+        <div style={{textAlign: "center", marginBottom: 36}}>
+          <div style={{fontWeight: 800, fontSize: 26, color: "#e5e5e5", letterSpacing: "-0.02em"}}>
+            Lead<span style={{color: "#fff"}}>Flow</span>
+          </div>
+          <div style={{fontSize: 13, color: "#525252", marginTop: 6}}>Sign in to your dashboard</div>
+        </div>
+        <form onSubmit={handleLogin} style={{display: "flex", flexDirection: "column", gap: 12}}>
+          <div style={{display: "flex", flexDirection: "column", gap: 5}}>
+            <label style={{fontSize: 11, color: "#525252", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600}}>Email</label>
+            <input
+              type="email" required value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              style={{background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 8, color: "#e5e5e5", fontSize: 14, fontFamily: "inherit", padding: "11px 12px", outline: "none", width: "100%"}}
+            />
+          </div>
+          <div style={{display: "flex", flexDirection: "column", gap: 5}}>
+            <label style={{fontSize: 11, color: "#525252", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600}}>Password</label>
+            <input
+              type="password" required value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              style={{background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 8, color: "#e5e5e5", fontSize: 14, fontFamily: "inherit", padding: "11px 12px", outline: "none", width: "100%"}}
+            />
+          </div>
+          {error && <div style={{fontSize: 13, color: "#ef4444", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 7, padding: "9px 12px"}}>{error}</div>}
+          <button type="submit" disabled={loading} style={{
+            marginTop: 4, background: "#fff", border: "none", borderRadius: 8, color: "#000",
+            fontWeight: 700, fontSize: 14, fontFamily: "inherit", padding: "12px",
+            cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1
+          }}>
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+        <div style={{textAlign: "center", marginTop: 24, fontSize: 12, color: "#333"}}>
+          LeadFlow Nigeria · Secure access only
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const DEFAULT_AGENTS = ["Emeka Obi","Fatima Yusuf","Chidi Nwosu","Blessing Adeyemi","Musa Ibrahim","Ngozi Eze"];
 
 const NIGERIAN_STATES = [
@@ -73,6 +136,21 @@ function tierColor(t) {
 const EMPTY_LEAD = { name:"", phone:"", location:"", tier:"SME", score:50, source:"Manual", status:"New", agent:"", income:"", business_type:"", notes:"" };
 
 export default function App() {
+  const [session, setSession] = useState(undefined); // undefined = checking, null = logged out
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) return null; // still checking
+  if (!session) return <LoginScreen />;
+
+  return <Dashboard onLogout={() => supabase.auth.signOut()} />;
+}
+
+function Dashboard({ onLogout }) {
   const [leads, setLeads]         = useState([]);
   const [filtered, setFiltered]   = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -427,6 +505,7 @@ export default function App() {
           <button className="btn btn-primary" onClick={() => setShowAddLead(true)}>+ Add Lead</button>
           <button className="btn" onClick={exportCSV}>Export CSV</button>
           <button className="btn" onClick={fetchLeads}>↻</button>
+          <button className="btn" onClick={onLogout} style={{color:"#ef4444"}}>Sign out</button>
         </div>
       </div>
 
@@ -838,3 +917,4 @@ export default function App() {
     </>
   );
 }
+
