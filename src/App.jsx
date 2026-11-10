@@ -259,7 +259,7 @@ function Dashboard({ session, onLogout }) {
   const [saving, setSaving]           = useState(false);
 
   const [showFindLeads, setShowFindLeads] = useState(false);
-  const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [], max_per_search: 20 });
+const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [], keywords_map: {}, max_total: 20 });
   const [scrapeJob, setScrapeJob]     = useState(null);
   const [scrapeStatus, setScrapeStatus] = useState(null);
   const pollRef = useRef(null);
