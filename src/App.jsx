@@ -832,16 +832,16 @@ function Dashboard({ session, profile, onLogout }) {
             <div className="stat-num">{stats.assigned}</div>
             <div className="stat-lbl">Assigned</div>
           </div>
-          <div className={`stat-box${statClick==="converted"?" active":""}`} onClick={() => handleStatClick("converted")}>
-            <div className="stat-num">{stats.converted}</div>
-            <div className="stat-lbl">Converted</div>
-          </div>
           {canSeeAll && (
             <div className={`stat-box${statClick==="pending"?" active":""}`} style={stats.pending>0?{borderColor:"rgba(249,115,22,0.3)"}:{}} onClick={() => handleStatClick("pending")}>
               <div className="stat-num" style={stats.pending>0?{color:"#f97316"}:{}}>{stats.pending}</div>
               <div className="stat-lbl">Pending Approval</div>
             </div>
           )}
+          <div className={`stat-box${statClick==="converted"?" active":""}`} onClick={() => handleStatClick("converted")}>
+            <div className="stat-num">{stats.converted}</div>
+            <div className="stat-lbl">Converted</div>
+          </div>
           <div className={`stat-box aging${statClick==="aging"?" active":""}`} onClick={() => handleStatClick("aging")}>
             <div className="stat-num">{agingCount}</div>
             <div className="stat-lbl">Aging ({AGING_DAYS}d+)</div>
