@@ -73,9 +73,11 @@ function getDateRange(value) {
 }
 
 function statusColor(s) {
-  if (s === "Converted") return "#a3a3a3";
-  if (s === "Contacted") return "#737373";
-  if (s === "Assigned")  return "#525252";
+  if (s === "Converted")        return "#22c55e";
+  if (s === "Pending Approval") return "#f97316";
+  if (s === "Contacted")        return "#737373";
+  if (s === "In Progress")      return "#60a5fa";
+  if (s === "Assigned")         return "#525252";
   return "#404040";
 }
 function tierColor(t) {
@@ -250,6 +252,7 @@ function Dashboard({ session, profile, onLogout }) {
   const [auditLoading, setAuditLoading]   = useState(false);
 
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showApprovals, setShowApprovals]     = useState(false);
 
   // Lead detail tabs
   const [detailTab, setDetailTab]         = useState("info");
@@ -277,6 +280,7 @@ function Dashboard({ session, profile, onLogout }) {
     if (statClick === "new")       f = f.filter(l => l.status === "New");
     if (statClick === "assigned")  f = f.filter(l => l.status === "Assigned");
     if (statClick === "converted") f = f.filter(l => l.status === "Converted");
+    if (statClick === "pending")   f = f.filter(l => l.status === "Pending Approval");
     if (statClick === "aging")     f = f.filter(l => isAging(l));
     setFiltered(f);
     setPage(1);
@@ -385,12 +389,38 @@ function Dashboard({ session, profile, onLogout }) {
   async function markStatus(newStatus) {
     if (!selected) return;
     const old = selected.status;
-    const { error } = await supabase.from("leads").update({ status: newStatus }).eq("id", selected.id);
+    // Agents requesting conversion go to Pending Approval, not straight to Converted
+    const actualStatus = (isAgent && newStatus === "Converted") ? "Pending Approval" : newStatus;
+    const { error } = await supabase.from("leads").update({ status: actualStatus }).eq("id", selected.id);
     if (!error) {
-      await logAudit(`Marked as ${newStatus}`, "lead", selected.id, { from: old, to: newStatus });
-      await logHistory(selected.id, "status", old, newStatus);
-      showToast(`Marked as ${newStatus}`);
+      await logAudit(`Marked as ${actualStatus}`, "lead", selected.id, { from: old, to: actualStatus });
+      await logHistory(selected.id, "status", old, actualStatus);
+      showToast(actualStatus === "Pending Approval" ? "Sent for manager approval" : `Marked as ${actualStatus}`);
       setSelected(null);
+      fetchLeads();
+    }
+  }
+
+  async function approveConversion(leadId) {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+    const { error } = await supabase.from("leads").update({ status: "Converted" }).eq("id", leadId);
+    if (!error) {
+      await logAudit("Approved conversion", "lead", leadId, { agent: lead.agent });
+      await logHistory(leadId, "status", "Pending Approval", "Converted");
+      showToast("Conversion approved ✓");
+      fetchLeads();
+    }
+  }
+
+  async function rejectConversion(leadId) {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+    const { error } = await supabase.from("leads").update({ status: "In Progress" }).eq("id", leadId);
+    if (!error) {
+      await logAudit("Rejected conversion", "lead", leadId, { agent: lead.agent });
+      await logHistory(leadId, "status", "Pending Approval", "In Progress");
+      showToast("Conversion rejected — lead back to In Progress");
       fetchLeads();
     }
   }
@@ -574,11 +604,13 @@ function Dashboard({ session, profile, onLogout }) {
   const totalPages = Math.ceil(filtered.length / perPage);
   const pageLeads  = filtered.slice((page-1)*perPage, page*perPage);
   const agingCount = leads.filter(isAging).length;
+  const pendingApprovals = leads.filter(l => l.status === "Pending Approval");
   const stats = {
     total:     leads.length,
     newLeads:  leads.filter(l => l.status === "New").length,
     assigned:  leads.filter(l => l.status === "Assigned").length,
     converted: leads.filter(l => l.status === "Converted").length,
+    pending:   pendingApprovals.length,
   };
   const hasActiveFilters = search||tierFilter||statusFilter||stateFilter||btypeFilter||dateFilter||statClick;
 
@@ -659,6 +691,7 @@ function Dashboard({ session, profile, onLogout }) {
         tbody tr:hover { background: rgba(255,255,255,0.02); }
         tbody tr.row-selected { background: rgba(255,255,255,0.03); }
         tbody tr.row-aging { border-left: 2px solid #f97316; }
+        tbody tr.row-pending { border-left: 2px solid #f97316; background: rgba(249,115,22,0.03); }
         td { padding: 10px 12px; color: #737373; vertical-align: middle; }
         td.name { color: #d4d4d4; font-weight: 500; white-space: nowrap; }
         td.check { width: 36px; }
@@ -768,6 +801,11 @@ function Dashboard({ session, profile, onLogout }) {
           <span className="user-email">{profile.name || session.user.email}{isBM && profile.branch ? ` · ${profile.branch}` : ""}</span>
           <button className="btn" onClick={() => setShowFindLeads(true)}>Find Leads</button>
           {canSeeAll && <button className="btn" onClick={() => { setShowUserMgr(true); setUserError(""); setUserSuccess(""); }}>Team</button>}
+          {canSeeAll && stats.pending > 0 && (
+            <button className="btn" style={{borderColor:"#f97316",color:"#f97316",fontWeight:700}} onClick={() => setShowApprovals(true)}>
+              ⏳ Approvals <span style={{background:"#f97316",color:"#fff",borderRadius:99,padding:"1px 7px",fontSize:11,marginLeft:4}}>{stats.pending}</span>
+            </button>
+          )}
           {canSeeAll && <button className="btn" onClick={() => { setShowLeaderboard(true); }}>Leaderboard</button>}
           {canSeeAll && <button className="btn" onClick={() => { setShowAuditLog(true); fetchAuditLogs(); }}>Audit Log</button>}
           <button className="btn btn-primary" onClick={() => setShowAddLead(true)}>+ Add Lead</button>
@@ -798,6 +836,12 @@ function Dashboard({ session, profile, onLogout }) {
             <div className="stat-num">{stats.converted}</div>
             <div className="stat-lbl">Converted</div>
           </div>
+          {canSeeAll && (
+            <div className={`stat-box${statClick==="pending"?" active":""}`} style={stats.pending>0?{borderColor:"rgba(249,115,22,0.3)"}:{}} onClick={() => handleStatClick("pending")}>
+              <div className="stat-num" style={stats.pending>0?{color:"#f97316"}:{}}>{stats.pending}</div>
+              <div className="stat-lbl">Pending Approval</div>
+            </div>
+          )}
           <div className={`stat-box aging${statClick==="aging"?" active":""}`} onClick={() => handleStatClick("aging")}>
             <div className="stat-num">{agingCount}</div>
             <div className="stat-lbl">Aging ({AGING_DAYS}d+)</div>
@@ -826,7 +870,7 @@ function Dashboard({ session, profile, onLogout }) {
             </select>
             <select className="filter-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
               <option value="">All statuses</option>
-              <option>New</option><option>Assigned</option><option>Contacted</option><option>Converted</option>
+              <option>New</option><option>Assigned</option><option>Contacted</option><option>In Progress</option><option>Pending Approval</option><option>Converted</option>
             </select>
             <select className="filter-select" value={dateFilter} onChange={e => setDateFilter(e.target.value)}>
               {DATE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -894,7 +938,7 @@ function Dashboard({ session, profile, onLogout }) {
                     const tc = tierColor(l.tier);
                     const aging = isAging(l);
                     return (
-                      <tr key={l.id} className={`${selectedIds.has(l.id)?"row-selected":""} ${aging?"row-aging":""}`} onClick={() => openLead(l)}>
+                      <tr key={l.id} className={`${selectedIds.has(l.id)?"row-selected":""} ${aging?"row-aging":""} ${l.status==="Pending Approval"?"row-pending":""}`} onClick={() => openLead(l)}>
                         <td className="check" onClick={e => toggleSelect(l.id, e)}><input type="checkbox" checked={selectedIds.has(l.id)} onChange={()=>{}} /></td>
                         <td className="name">{l.name}{aging && <span className="aging-badge">aging</span>}</td>
                         <td style={{fontSize:11,whiteSpace:"nowrap"}}>{l.phone||"—"}</td>
@@ -1024,10 +1068,27 @@ function Dashboard({ session, profile, onLogout }) {
                         </select>
                       </div>
                     )}
+                    {/* Approve/Reject — shown to BM/Admin when lead is pending */}
+                    {canSeeAll && selected.status === "Pending Approval" && (
+                      <div style={{background:"rgba(249,115,22,0.08)",border:"1px solid rgba(249,115,22,0.25)",borderRadius:8,padding:"12px",display:"flex",flexDirection:"column",gap:8}}>
+                        <div style={{fontSize:12,color:"#f97316",fontWeight:600}}>⏳ Awaiting conversion approval</div>
+                        <div style={{fontSize:12,color:"#737373"}}>Agent: <strong style={{color:"#a3a3a3"}}>{selected.agent||"—"}</strong></div>
+                        <div className="action-row">
+                          <button className="btn btn-primary" style={{flex:1,justifyContent:"center",background:"#22c55e",borderColor:"#22c55e",color:"#fff"}} onClick={() => { approveConversion(selected.id); setSelected(null); }}>✓ Approve</button>
+                          <button className="btn btn-danger" style={{flex:1,justifyContent:"center"}} onClick={() => { rejectConversion(selected.id); setSelected(null); }}>✕ Reject</button>
+                        </div>
+                      </div>
+                    )}
                     <div className="action-row">
                       {canSeeAll && <button className="btn btn-primary" onClick={assignLead}>Assign</button>}
-                      <button className="btn" onClick={() => markStatus("Contacted")}>Mark Contacted</button>
-                      <button className="btn" onClick={() => markStatus("Converted")}>Mark Converted</button>
+                      {selected.status !== "Pending Approval" && (
+                        <button className="btn" onClick={() => markStatus("Contacted")}>Mark Contacted</button>
+                      )}
+                      {selected.status !== "Converted" && selected.status !== "Pending Approval" && (
+                        <button className="btn" onClick={() => markStatus("Converted")}>
+                          {isAgent ? "Request Conversion" : "Mark Converted"}
+                        </button>
+                      )}
                     </div>
                     <div className="action-row">
                       <button className="btn" onClick={() => { setEditMode(true); setEditData({...selected}); }}>Edit Lead</button>
@@ -1307,6 +1368,40 @@ function Dashboard({ session, profile, onLogout }) {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* APPROVALS MODAL */}
+      {showApprovals && canSeeAll && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowApprovals(false)}>
+          <div className="modal" style={{maxWidth:560}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span className="modal-title">Pending Approvals <span style={{fontSize:13,color:"#f97316",fontWeight:700}}>({pendingApprovals.length})</span></span>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowApprovals(false)}>✕</button>
+            </div>
+            {pendingApprovals.length === 0 ? (
+              <div style={{fontSize:13,color:"#3a3a3a",textAlign:"center",padding:"32px 0"}}>No pending approvals 🎉</div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {pendingApprovals.map(lead => (
+                  <div key={lead.id} style={{background:"#0c0c0c",border:"1px solid #2a2a2a",borderRadius:10,padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:"#e5e5e5"}}>{lead.name}</div>
+                        <div style={{fontSize:11,color:"#525252",marginTop:2}}>{lead.business_type||"—"} · {lead.location} · Agent: <strong style={{color:"#a3a3a3"}}>{lead.agent||"—"}</strong></div>
+                      </div>
+                      <span style={{fontSize:11,background:"rgba(249,115,22,0.1)",color:"#f97316",border:"1px solid rgba(249,115,22,0.2)",borderRadius:4,padding:"2px 7px",whiteSpace:"nowrap"}}>Pending</span>
+                    </div>
+                    <div style={{display:"flex",gap:7}}>
+                      <button className="btn btn-primary" style={{flex:1,justifyContent:"center",background:"#22c55e",borderColor:"#22c55e",color:"#fff",fontSize:12}} onClick={()=>approveConversion(lead.id)}>✓ Approve</button>
+                      <button className="btn btn-danger" style={{flex:1,justifyContent:"center",fontSize:12}} onClick={()=>rejectConversion(lead.id)}>✕ Reject</button>
+                      <button className="btn" style={{fontSize:12,padding:"7px 10px"}} onClick={()=>{setShowApprovals(false);openLead(lead);}}>View</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
