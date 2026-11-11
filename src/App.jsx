@@ -8,7 +8,26 @@ const supabase = createClient(
 
 const API_URL = "https://leadflow-api-production-d2f0.up.railway.app";
 
-const DEFAULT_AGENTS = ["Emeka Obi","Fatima Yusuf","Chidi Nwosu","Blessing Adeyemi","Musa Ibrahim","Ngozi Eze"];
+const BUSINESS_KEYWORDS = {
+  "Supermarket": ["supermarket","grocery store","food market"],
+  "Pharmacy": ["pharmacy","chemist","drug store"],
+  "Hotel": ["hotel","guest house","lodge"],
+  "Restaurant": ["restaurant","eatery","food canteen"],
+  "Hospital": ["hospital","medical centre","clinic"],
+  "School": ["school","academy","college"],
+  "Logistics": ["logistics company","courier service","transport company"],
+  "Filling Station": ["filling station","petrol station","fuel station"],
+  "Hardware Store": ["hardware store","building materials","ironmonger"],
+  "Fashion Shop": ["fashion shop","boutique","clothing store"],
+  "Electronics Store": ["electronics store","phone shop","computer shop"],
+  "Church": ["church","ministry","evangelical church"],
+  "Mosque": ["mosque","islamic centre","masjid"],
+  "Market": ["market","trade centre","shopping complex"],
+  "Salon": ["salon","barber shop","hair stylist"],
+  "Bakery": ["bakery","bread shop","confectionery"],
+  "Printing Press": ["printing press","print shop","signage company"],
+  "Clinic": ["clinic","medical centre","health centre"],
+};
 
 const NIGERIAN_STATES = [
   "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
@@ -18,12 +37,7 @@ const NIGERIAN_STATES = [
   "Taraba","Yobe","Zamfara"
 ];
 
-const BUSINESS_TYPES = [
-  "Supermarket","Pharmacy","Hotel","Restaurant","Hospital","School",
-  "Logistics","Filling Station","Hardware Store","Fashion Shop",
-  "Electronics Store","Church","Mosque","Market","Salon","Bakery",
-  "Printing Press","Clinic"
-];
+const BUSINESS_TYPES = Object.keys(BUSINESS_KEYWORDS);
 
 const DATE_OPTIONS = [
   { label: "All time", value: "" },
@@ -70,9 +84,14 @@ function tierColor(t) {
   return { bg: "rgba(255,255,255,0.05)", color: "#737373" };
 }
 
+function roleColor(r) {
+  if (r === "admin") return { bg: "rgba(239,68,68,0.1)", color: "#ef4444" };
+  if (r === "branch_manager") return { bg: "rgba(251,191,36,0.1)", color: "#fbbf24" };
+  return { bg: "rgba(52,211,153,0.1)", color: "#34d399" };
+}
+
 const EMPTY_LEAD = { name:"", phone:"", location:"", tier:"SME", score:50, source:"Manual", status:"New", agent:"", income:"", business_type:"", notes:"" };
 
-// ── AUTH STYLES (shared) ──────────────────────────────────────────────────────
 const authStyle = {
   page: { minHeight:"100vh", background:"#0c0c0c", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px", fontFamily:"'DM Sans',sans-serif" },
   box:  { width:"100%", maxWidth:380 },
@@ -93,8 +112,7 @@ const authStyle = {
   foot: { textAlign:"center", marginTop:28, fontSize:12, color:"#2a2a2a" },
 };
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
-function LoginScreen({ onSwitch }) {
+function LoginScreen() {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading]   = useState(false);
@@ -125,86 +143,20 @@ function LoginScreen({ onSwitch }) {
             <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={authStyle.input} />
           </div>
           {error && <div style={authStyle.err}>{error}</div>}
-          <button type="submit" disabled={loading} style={{...authStyle.btn, ...(loading?authStyle.btnDisabled:{})}}>
+          <button type="submit" disabled={loading} style={{...authStyle.btn,...(loading?authStyle.btnDisabled:{})}}>
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <div style={authStyle.link}>
-          No account? <button style={authStyle.linkBtn} onClick={onSwitch}>Create one</button>
-        </div>
         <div style={authStyle.foot}>LeadFlow Nigeria · Secure access only</div>
       </div>
     </div>
   );
 }
 
-// ── SIGNUP ────────────────────────────────────────────────────────────────────
-function SignupScreen({ onSwitch }) {
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm]   = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-  const [done, setDone]         = useState(false);
-
-  async function handleSignup(e) {
-    e.preventDefault();
-    if (password.length < 8) return setError("Password must be at least 8 characters.");
-    if (password !== confirm) return setError("Passwords do not match.");
-    setLoading(true); setError("");
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) { setError(error.message); setLoading(false); }
-    else setDone(true);
-  }
-
-  return (
-    <div style={authStyle.page}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      <div style={authStyle.box}>
-        <div style={authStyle.logo}>
-          <div style={authStyle.logoText}>Lead<span style={authStyle.logoSpan}>Flow</span></div>
-          <div style={authStyle.sub}>Create your account</div>
-        </div>
-        {done ? (
-          <>
-            <div style={authStyle.ok}>Account created! Check your email to confirm, then sign in.</div>
-            <div style={authStyle.link}><button style={authStyle.linkBtn} onClick={onSwitch}>Back to sign in</button></div>
-          </>
-        ) : (
-          <>
-            <form onSubmit={handleSignup} style={authStyle.form}>
-              <div style={authStyle.group}>
-                <label style={authStyle.label}>Email</label>
-                <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={authStyle.input} />
-              </div>
-              <div style={authStyle.group}>
-                <label style={authStyle.label}>Password</label>
-                <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Min. 8 characters" style={authStyle.input} />
-              </div>
-              <div style={authStyle.group}>
-                <label style={authStyle.label}>Confirm password</label>
-                <input type="password" required value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Repeat password" style={authStyle.input} />
-              </div>
-              {error && <div style={authStyle.err}>{error}</div>}
-              <button type="submit" disabled={loading} style={{...authStyle.btn, ...(loading?authStyle.btnDisabled:{})}}>
-                {loading ? "Creating account…" : "Create account"}
-              </button>
-            </form>
-            <div style={authStyle.link}>
-              Already have an account? <button style={authStyle.linkBtn} onClick={onSwitch}>Sign in</button>
-            </div>
-          </>
-        )}
-        <div style={authStyle.foot}>LeadFlow Nigeria · Secure access only</div>
-      </div>
-    </div>
-  );
-}
-
-// ── ROOT ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [session, setSession] = useState(undefined);
-  const [showSignup, setShowSignup] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -212,59 +164,105 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (session === undefined) return null;
-  if (!session) {
-    return showSignup
-      ? <SignupScreen onSwitch={() => setShowSignup(false)} />
-      : <LoginScreen onSwitch={() => setShowSignup(true)} />;
+  useEffect(() => {
+    if (session) fetchProfile();
+    else setProfile(null);
+  }, [session]);
+
+  async function fetchProfile() {
+    setProfileLoading(true);
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", session.user.id).single();
+    setProfile(data || null);
+    setProfileLoading(false);
   }
-  return <Dashboard session={session} onLogout={() => supabase.auth.signOut()} />;
+
+  if (session === undefined || (session && profileLoading)) return (
+    <div style={{minHeight:"100vh",background:"#0c0c0c",display:"flex",alignItems:"center",justifyContent:"center",color:"#525252",fontFamily:"DM Sans,sans-serif",fontSize:13}}>
+      Loading…
+    </div>
+  );
+
+  if (!session) return <LoginScreen />;
+
+  if (!profile) return (
+    <div style={{minHeight:"100vh",background:"#0c0c0c",display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"DM Sans,sans-serif"}}>
+      <div style={{textAlign:"center",maxWidth:360}}>
+        <div style={{fontWeight:800,fontSize:22,color:"#e5e5e5",marginBottom:12}}>Access Pending</div>
+        <div style={{fontSize:13,color:"#525252",lineHeight:1.6,marginBottom:20}}>Your account has been created but no role has been assigned yet. Please contact your branch manager or administrator to get access.</div>
+        <div style={{fontSize:12,color:"#3a3a3a",marginBottom:20}}>{session.user.email}</div>
+        <button style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:8,color:"#d4d4d4",fontSize:13,fontFamily:"inherit",padding:"10px 20px",cursor:"pointer"}} onClick={() => supabase.auth.signOut()}>Sign out</button>
+      </div>
+    </div>
+  );
+
+  return <Dashboard session={session} profile={profile} onLogout={() => supabase.auth.signOut()} />;
 }
 
-// ── DASHBOARD ─────────────────────────────────────────────────────────────────
-function Dashboard({ session, onLogout }) {
+function Dashboard({ session, profile, onLogout }) {
   const userId = session.user.id;
+  const role = profile.role; // "admin" | "branch_manager" | "agent"
+  const isAdmin = role === "admin";
+  const isBM = role === "branch_manager";
+  const isAgent = role === "agent";
+  const canSeeAll = isAdmin || isBM;
 
-  const [leads, setLeads]         = useState([]);
-  const [filtered, setFiltered]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [selected, setSelected]   = useState(null);
-  const [editMode, setEditMode]   = useState(false);
-  const [editData, setEditData]   = useState({});
+  const [leads, setLeads]           = useState([]);
+  const [filtered, setFiltered]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [selected, setSelected]     = useState(null);
+  const [editMode, setEditMode]     = useState(false);
+  const [editData, setEditData]     = useState({});
   const [assignAgent, setAssignAgent] = useState("");
-  const [toast, setToast]         = useState("");
-  const [page, setPage]           = useState(1);
+  const [toast, setToast]           = useState("");
+  const [page, setPage]             = useState(1);
   const perPage = 10;
 
-  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectedIds, setSelectedIds]     = useState(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const [search, setSearch]           = useState("");
-  const [tierFilter, setTierFilter]   = useState("");
+  const [search, setSearch]             = useState("");
+  const [tierFilter, setTierFilter]     = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [stateFilter, setStateFilter] = useState("");
-  const [btypeFilter, setBtypeFilter] = useState("");
-  const [dateFilter, setDateFilter]   = useState("");
-  const [statClick, setStatClick]     = useState("");
+  const [stateFilter, setStateFilter]   = useState("");
+  const [btypeFilter, setBtypeFilter]   = useState("");
+  const [dateFilter, setDateFilter]     = useState("");
+  const [statClick, setStatClick]       = useState("");
 
-  const [agents, setAgents] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("lf_agents_" + userId)) || DEFAULT_AGENTS; }
-    catch { return DEFAULT_AGENTS; }
-  });
-  const [showAgentMgr, setShowAgentMgr] = useState(false);
-  const [newAgentName, setNewAgentName] = useState("");
+  const [teamMembers, setTeamMembers]   = useState([]);
+  const [showUserMgr, setShowUserMgr]   = useState(false);
+  const [newUser, setNewUser]           = useState({ name:"", email:"", password:"", role:"agent" });
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [userError, setUserError]       = useState("");
+  const [userSuccess, setUserSuccess]   = useState("");
 
-  const [showAddLead, setShowAddLead] = useState(false);
-  const [newLead, setNewLead]         = useState(EMPTY_LEAD);
-  const [saving, setSaving]           = useState(false);
+  const [showAddLead, setShowAddLead]   = useState(false);
+  const [newLead, setNewLead]           = useState(EMPTY_LEAD);
+  const [saving, setSaving]             = useState(false);
 
   const [showFindLeads, setShowFindLeads] = useState(false);
-const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [], keywords_map: {}, max_total: 20 });
-  const [scrapeJob, setScrapeJob]     = useState(null);
-  const [scrapeStatus, setScrapeStatus] = useState(null);
+  const [scrapeConfig, setScrapeConfig]   = useState({ cities:[], business_types:[], keywords_map:{}, max_total:20 });
+  const [scrapeJob, setScrapeJob]         = useState(null);
+  const [scrapeStatus, setScrapeStatus]   = useState(null);
   const pollRef = useRef(null);
 
-  useEffect(() => { fetchLeads(); }, []);
+  const [showAuditLog, setShowAuditLog]   = useState(false);
+  const [auditLogs, setAuditLogs]         = useState([]);
+  const [auditLoading, setAuditLoading]   = useState(false);
+
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  // Lead detail tabs
+  const [detailTab, setDetailTab]         = useState("info");
+  const [comments, setComments]           = useState([]);
+  const [newComment, setNewComment]       = useState("");
+  const [leadHistory, setLeadHistory]     = useState([]);
+  const [followUps, setFollowUps]         = useState([]);
+  const [newFollowUp, setNewFollowUp]     = useState({ due_date:"", note:"" });
+
+  // Aging alert threshold (days)
+  const AGING_DAYS = 7;
+
+  useEffect(() => { fetchLeads(); fetchTeamMembers(); }, []);
 
   useEffect(() => {
     const { from, to } = getDateRange(dateFilter);
@@ -279,46 +277,148 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
     if (statClick === "new")       f = f.filter(l => l.status === "New");
     if (statClick === "assigned")  f = f.filter(l => l.status === "Assigned");
     if (statClick === "converted") f = f.filter(l => l.status === "Converted");
+    if (statClick === "aging")     f = f.filter(l => isAging(l));
     setFiltered(f);
     setPage(1);
     setSelectedIds(new Set());
   }, [leads, search, tierFilter, statusFilter, stateFilter, btypeFilter, dateFilter, statClick]);
 
+  function isAging(lead) {
+    if (lead.status === "Converted") return false;
+    if (!lead.created_at) return false;
+    const days = (Date.now() - new Date(lead.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    return days > AGING_DAYS && lead.status !== "Converted";
+  }
+
   async function fetchLeads() {
     setLoading(true);
-    const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
-    if (!error) setLeads(data);
+    let query = supabase.from("leads").select("*").order("created_at", { ascending: false });
+    if (isAgent) query = query.eq("agent", profile.name);
+    const { data, error } = await query;
+    if (!error) setLeads(data || []);
     setLoading(false);
   }
 
-  async function assignLead() {
-    if (!assignAgent || !selected) return showToast("Select an agent first");
-    const { error } = await supabase.from("leads").update({ agent: assignAgent, status: selected.status === "New" ? "Assigned" : selected.status }).eq("id", selected.id);
-    if (!error) { showToast("Assigned to " + assignAgent); setSelected(null); fetchLeads(); }
+  async function fetchTeamMembers() {
+    if (!canSeeAll) return;
+    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    setTeamMembers(data || []);
   }
 
-  async function markConverted() {
+  async function fetchComments(leadId) {
+    const { data } = await supabase.from("lead_comments").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
+    setComments(data || []);
+  }
+
+  async function fetchHistory(leadId) {
+    const { data } = await supabase.from("lead_history").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
+    setLeadHistory(data || []);
+  }
+
+  async function fetchFollowUps(leadId) {
+    const { data } = await supabase.from("follow_ups").select("*").eq("lead_id", leadId).order("due_date", { ascending: true });
+    setFollowUps(data || []);
+  }
+
+  async function addComment() {
+    if (!newComment.trim() || !selected) return;
+    await supabase.from("lead_comments").insert([{
+      lead_id: selected.id, user_id: userId,
+      user_name: profile.name, comment: newComment.trim()
+    }]);
+    await logAudit("Added comment", "lead", selected.id, { comment: newComment.trim() });
+    setNewComment("");
+    fetchComments(selected.id);
+  }
+
+  async function addFollowUp() {
+    if (!newFollowUp.due_date || !selected) return;
+    await supabase.from("follow_ups").insert([{
+      lead_id: selected.id, user_id: userId,
+      due_date: newFollowUp.due_date, note: newFollowUp.note
+    }]);
+    setNewFollowUp({ due_date:"", note:"" });
+    fetchFollowUps(selected.id);
+  }
+
+  async function markFollowUpDone(id) {
+    await supabase.from("follow_ups").update({ done: true }).eq("id", id);
+    fetchFollowUps(selected.id);
+  }
+
+  async function logAudit(action, targetType, targetId, details) {
+    await supabase.from("audit_logs").insert([{
+      user_id: userId, user_name: profile.name,
+      action, target_type: targetType,
+      target_id: String(targetId), details
+    }]);
+  }
+
+  async function logHistory(leadId, field, oldVal, newVal) {
+    await supabase.from("lead_history").insert([{
+      lead_id: leadId, user_id: userId, user_name: profile.name,
+      field_changed: field, old_value: String(oldVal||""), new_value: String(newVal||"")
+    }]);
+  }
+
+  async function assignLead() {
+    if (!assignAgent || !selected) return showToast("Select a team member first");
+    const oldAgent = selected.agent;
+    const { error } = await supabase.from("leads").update({
+      agent: assignAgent,
+      status: selected.status === "New" ? "Assigned" : selected.status
+    }).eq("id", selected.id);
+    if (!error) {
+      await logAudit("Assigned lead", "lead", selected.id, { from: oldAgent, to: assignAgent });
+      await logHistory(selected.id, "agent", oldAgent, assignAgent);
+      showToast("Assigned to " + assignAgent);
+      setSelected(null);
+      fetchLeads();
+    }
+  }
+
+  async function markStatus(newStatus) {
     if (!selected) return;
-    const { error } = await supabase.from("leads").update({ status: "Converted" }).eq("id", selected.id);
-    if (!error) { showToast("Marked as converted"); setSelected(null); fetchLeads(); }
+    const old = selected.status;
+    const { error } = await supabase.from("leads").update({ status: newStatus }).eq("id", selected.id);
+    if (!error) {
+      await logAudit(`Marked as ${newStatus}`, "lead", selected.id, { from: old, to: newStatus });
+      await logHistory(selected.id, "status", old, newStatus);
+      showToast(`Marked as ${newStatus}`);
+      setSelected(null);
+      fetchLeads();
+    }
   }
 
   async function saveEdit() {
     if (!editData.name?.trim()) return showToast("Name is required");
     setSaving(true);
+    const changes = {};
+    ["name","phone","location","tier","status","agent","income","business_type","notes","score"].forEach(k => {
+      if (String(editData[k]||"") !== String(selected[k]||"")) changes[k] = editData[k];
+    });
     const { error } = await supabase.from("leads").update({
       name: editData.name, phone: editData.phone, location: editData.location,
       tier: editData.tier, status: editData.status, agent: editData.agent,
-      income: editData.income, business_type: editData.business_type, notes: editData.notes,
-      score: Number(editData.score),
+      income: editData.income, business_type: editData.business_type,
+      notes: editData.notes, score: Number(editData.score),
     }).eq("id", selected.id);
     setSaving(false);
-    if (!error) { showToast("Lead updated"); setEditMode(false); setSelected(null); fetchLeads(); }
-    else showToast("Error saving");
+    if (!error) {
+      for (const [k, v] of Object.entries(changes)) {
+        await logHistory(selected.id, k, selected[k], v);
+      }
+      await logAudit("Edited lead", "lead", selected.id, changes);
+      showToast("Lead updated");
+      setEditMode(false);
+      setSelected(null);
+      fetchLeads();
+    } else showToast("Error saving");
   }
 
   async function deleteSingleLead(id) {
     await supabase.from("leads").delete().eq("id", id);
+    await logAudit("Deleted lead", "lead", id, {});
     showToast("Lead deleted");
     setSelected(null);
     fetchLeads();
@@ -326,7 +426,10 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
 
   async function deleteSelected() {
     const ids = [...selectedIds];
-    for (const id of ids) await supabase.from("leads").delete().eq("id", id);
+    for (const id of ids) {
+      await supabase.from("leads").delete().eq("id", id);
+      await logAudit("Deleted lead", "lead", id, {});
+    }
     showToast(`Deleted ${ids.length} lead${ids.length > 1 ? "s" : ""}`);
     setSelectedIds(new Set());
     setConfirmDelete(false);
@@ -338,33 +441,52 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
     setSaving(true);
     const { error } = await supabase.from("leads").insert([{ ...newLead, score: Number(newLead.score), user_id: userId }]);
     setSaving(false);
-    if (!error) { showToast("Lead added"); setNewLead(EMPTY_LEAD); setShowAddLead(false); fetchLeads(); }
-    else showToast("Error saving lead");
+    if (!error) {
+      await logAudit("Added lead manually", "lead", newLead.name, {});
+      showToast("Lead added");
+      setNewLead(EMPTY_LEAD);
+      setShowAddLead(false);
+      fetchLeads();
+    } else showToast("Error saving lead");
+  }
+
+  async function createUser() {
+    setUserError(""); setUserSuccess("");
+    if (!newUser.name || !newUser.email || !newUser.password) return setUserError("All fields are required");
+    if (newUser.password.length < 8) return setUserError("Password must be at least 8 characters");
+    setCreatingUser(true);
+    const { data: { session: s } } = await supabase.auth.getSession();
+    const r = await fetch(`${API_URL}/create-user`, {
+      method: "POST",
+      headers: { "Content-Type":"application/json", "Authorization":`Bearer ${s.access_token}` },
+      body: JSON.stringify(newUser)
+    });
+    const data = await r.json();
+    setCreatingUser(false);
+    if (data.error) return setUserError(data.error);
+    setUserSuccess(`${newUser.role === "agent" ? "Agent" : "Branch Manager"} "${newUser.name}" created!`);
+    setNewUser({ name:"", email:"", password:"", role:"agent" });
+    fetchTeamMembers();
   }
 
   async function startScrape() {
     if (!scrapeConfig.cities.length) return showToast("Select at least one state");
     if (!scrapeConfig.business_types.length) return showToast("Select at least one business type");
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const token = currentSession?.access_token;
+      const { data: { session: s } } = await supabase.auth.getSession();
       const r = await fetch(`${API_URL}/scrape`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
+        headers: { "Content-Type":"application/json", "Authorization":`Bearer ${s.access_token}` },
         body: JSON.stringify({ ...scrapeConfig })
       });
       const data = await r.json();
       if (data.job_id) {
         setScrapeJob(data.job_id);
-        setScrapeStatus({ status: "starting", added: 0, progress: 0 });
+        setScrapeStatus({ status:"starting", added:0, progress:0 });
         pollRef.current = setInterval(() => pollJob(data.job_id), 2000);
+        await logAudit("Started scraper", "scraper", data.job_id, { cities: scrapeConfig.cities, types: scrapeConfig.business_types });
       } else showToast("Failed to start scraper");
-    } catch {
-      showToast("Cannot reach API — check Railway deployment");
-    }
+    } catch { showToast("Cannot reach API"); }
   }
 
   async function pollJob(jobId) {
@@ -385,27 +507,21 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
   }
 
   function cancelScrape() {
-    if (scrapeJob) fetch(`${API_URL}/cancel/${scrapeJob}`, { method: "POST" });
+    if (scrapeJob) fetch(`${API_URL}/cancel/${scrapeJob}`, { method:"POST" });
     clearInterval(pollRef.current);
     setScrapeJob(null);
     setScrapeStatus(null);
   }
 
-  function addAgent() {
-    const name = newAgentName.trim();
-    if (!name) return;
-    if (agents.includes(name)) return showToast("Agent already exists");
-    const updated = [...agents, name];
-    setAgents(updated);
-    localStorage.setItem("lf_agents_" + userId, JSON.stringify(updated));
-    setNewAgentName("");
-    showToast(name + " added");
-  }
-
-  function removeAgent(name) {
-    const updated = agents.filter(a => a !== name);
-    setAgents(updated);
-    localStorage.setItem("lf_agents_" + userId, JSON.stringify(updated));
+  async function fetchAuditLogs() {
+    setAuditLoading(true);
+    const { data: { session: s } } = await supabase.auth.getSession();
+    const r = await fetch(`${API_URL}/audit-logs`, {
+      headers: { "Authorization":`Bearer ${s.access_token}` }
+    });
+    const data = await r.json();
+    setAuditLogs(Array.isArray(data) ? data : []);
+    setAuditLoading(false);
   }
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(""), 3500); }
@@ -417,6 +533,7 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
     a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(rows.join("\n"));
     a.download = "leadflow.csv"; a.click();
     showToast("CSV downloaded");
+    logAudit("Exported CSV", "leads", "bulk", { count: filtered.length });
   }
 
   function handleStatClick(key) {
@@ -431,11 +548,7 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
 
   function toggleSelect(id, e) {
     e.stopPropagation();
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
 
   function toggleSelectAll() {
@@ -443,8 +556,19 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
     else setSelectedIds(new Set(pageLeads.map(l => l.id)));
   }
 
+  function openLead(l) {
+    setSelected(l);
+    setAssignAgent(l.agent || "");
+    setEditMode(false);
+    setDetailTab("info");
+    fetchComments(l.id);
+    fetchHistory(l.id);
+    fetchFollowUps(l.id);
+  }
+
   const totalPages = Math.ceil(filtered.length / perPage);
   const pageLeads  = filtered.slice((page-1)*perPage, page*perPage);
+  const agingCount = leads.filter(isAging).length;
   const stats = {
     total:     leads.length,
     newLeads:  leads.filter(l => l.status === "New").length,
@@ -452,6 +576,19 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
     converted: leads.filter(l => l.status === "Converted").length,
   };
   const hasActiveFilters = search||tierFilter||statusFilter||stateFilter||btypeFilter||dateFilter||statClick;
+
+  // Leaderboard data
+  const leaderboard = teamMembers
+    .filter(m => m.role === "agent")
+    .map(m => ({
+      name: m.name,
+      assigned: leads.filter(l => l.agent === m.name).length,
+      converted: leads.filter(l => l.agent === m.name && l.status === "Converted").length,
+    }))
+    .sort((a,b) => b.converted - a.converted);
+
+  // Due follow-ups
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <>
@@ -461,7 +598,7 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
 
         .top-bar { position: sticky; top: 0; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; background: rgba(12,12,12,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid #1f1f1f; z-index: 100; gap: 8px; flex-wrap: wrap; }
         .logo { font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: #e5e5e5; white-space: nowrap; }
-        .top-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .top-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 
         .btn { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 7px 13px; border-radius: 8px; border: 1px solid #2a2a2a; background: #1a1a1a; color: #d4d4d4; cursor: pointer; transition: background 0.15s, border-color 0.15s; white-space: nowrap; font-family: inherit; }
         .btn:hover { background: #222; border-color: #333; color: #e5e5e5; }
@@ -474,16 +611,19 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
         .btn-signout { color: #525252; }
         .btn-signout:hover { color: #ef4444; border-color: #3a1a1a; }
 
+        .role-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
         .page { padding: 16px; max-width: 1200px; margin: 0 auto; }
         .section-label { font-size: 11px; font-weight: 500; color: #525252; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
 
         .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 16px; }
-        @media(min-width:600px){ .stat-grid { grid-template-columns: repeat(4,1fr); } }
+        @media(min-width:600px){ .stat-grid { grid-template-columns: repeat(5,1fr); } }
         .stat-box { background: #111; border: 1px solid #1f1f1f; border-radius: 10px; padding: 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s; user-select: none; }
         .stat-box:hover { background: #161616; border-color: #2a2a2a; }
         .stat-box.active { border-color: #333; background: #161616; }
         .stat-num { font-weight: 800; font-size: 26px; letter-spacing: -0.03em; color: #e5e5e5; }
         .stat-lbl { font-size: 11px; color: #525252; margin-top: 4px; }
+        .stat-box.aging .stat-num { color: #f97316; }
 
         .filters-section { background: #111; border: 1px solid #1f1f1f; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
         .filters-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -513,6 +653,7 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
         tbody tr:last-child { border-bottom: none; }
         tbody tr:hover { background: rgba(255,255,255,0.02); }
         tbody tr.row-selected { background: rgba(255,255,255,0.03); }
+        tbody tr.row-aging { border-left: 2px solid #f97316; }
         td { padding: 10px 12px; color: #737373; vertical-align: middle; }
         td.name { color: #d4d4d4; font-weight: 500; white-space: nowrap; }
         td.check { width: 36px; }
@@ -534,7 +675,7 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
         .page-btn:disabled { opacity: 0.25; pointer-events: none; }
 
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; }
-        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px,100vw); background: #111; border-left: 1px solid #1f1f1f; z-index: 201; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px,100vw); background: #111; border-left: 1px solid #1f1f1f; z-index: 201; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
         .drawer-name { font-weight: 700; font-size: 18px; color: #e5e5e5; }
         .drawer-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #1a1a1a; font-size: 12px; gap: 12px; }
         .drawer-row-label { color: #525252; flex-shrink: 0; }
@@ -543,9 +684,28 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
         .action-row { display: flex; gap: 7px; flex-wrap: wrap; }
         .action-row .btn { flex: 1; justify-content: center; min-width: 80px; }
 
+        .detail-tabs { display: flex; gap: 2px; border-bottom: 1px solid #1f1f1f; margin-bottom: 12px; }
+        .detail-tab { background: none; border: none; border-bottom: 2px solid transparent; color: #525252; font-family: inherit; font-size: 12px; font-weight: 500; padding: 6px 12px; cursor: pointer; margin-bottom: -1px; }
+        .detail-tab.active { color: #e5e5e5; border-bottom-color: #fff; }
+
+        .comment-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
+        .comment-item { background: #0c0c0c; border: 1px solid #1f1f1f; border-radius: 7px; padding: 8px 10px; }
+        .comment-meta { font-size: 10px; color: #525252; margin-bottom: 3px; }
+        .comment-text { font-size: 12px; color: #d4d4d4; }
+        .comment-input-row { display: flex; gap: 6px; }
+
+        .history-list { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+        .history-item { font-size: 11px; color: #737373; border-left: 2px solid #1f1f1f; padding-left: 8px; }
+        .history-field { color: #a3a3a3; font-weight: 600; }
+
+        .followup-list { display: flex; flex-direction: column; gap: 6px; }
+        .followup-item { background: #0c0c0c; border: 1px solid #1f1f1f; border-radius: 7px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; }
+        .followup-item.overdue { border-color: #3a1a1a; }
+        .followup-item.done { opacity: 0.4; }
+
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
         @media(min-width:600px){ .modal-overlay { align-items: center; } }
-        .modal { background: #111; border: 1px solid #1f1f1f; border-radius: 14px 14px 0 0; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+        .modal { background: #111; border: 1px solid #1f1f1f; border-radius: 14px 14px 0 0; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
         @media(min-width:600px){ .modal { border-radius: 14px; } }
         .modal-title { font-size: 15px; font-weight: 700; color: #e5e5e5; }
         .form-group { display: flex; flex-direction: column; gap: 5px; }
@@ -554,10 +714,23 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
         .form-input::placeholder { color: #3a3a3a; }
         .form-textarea { resize: vertical; min-height: 60px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .agent-list { display: flex; flex-direction: column; gap: 7px; }
-        .agent-item { display: flex; align-items: center; justify-content: space-between; background: #0c0c0c; border: 1px solid #1f1f1f; border-radius: 7px; padding: 8px 12px; font-size: 13px; color: #d4d4d4; }
         .edit-input { background: #0c0c0c; border: 1px solid #2a2a2a; border-radius: 7px; color: #d4d4d4; font-size: 12px; font-family: inherit; padding: 6px 9px; outline: none; width: 100%; }
         .edit-select { background: #0c0c0c; border: 1px solid #2a2a2a; border-radius: 7px; color: #d4d4d4; font-size: 12px; font-family: inherit; padding: 6px 9px; outline: none; width: 100%; }
+
+        .user-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .user-table th { text-align: left; padding: 7px 10px; font-size: 10px; color: #3a3a3a; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid #1f1f1f; }
+        .user-table td { padding: 9px 10px; border-bottom: 1px solid #161616; color: #737373; }
+        .user-table td:first-child { color: #d4d4d4; font-weight: 500; }
+
+        .audit-list { display: flex; flex-direction: column; gap: 6px; max-height: 500px; overflow-y: auto; }
+        .audit-item { background: #0c0c0c; border: 1px solid #1f1f1f; border-radius: 7px; padding: 8px 12px; font-size: 12px; }
+        .audit-meta { font-size: 10px; color: #525252; margin-top: 2px; }
+
+        .lb-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: #0c0c0c; border: 1px solid #1f1f1f; border-radius: 8px; }
+        .lb-rank { font-size: 13px; font-weight: 800; color: #3a3a3a; width: 20px; }
+        .lb-name { flex: 1; font-size: 13px; color: #d4d4d4; font-weight: 500; }
+        .lb-stat { font-size: 12px; color: #525252; }
+        .lb-converted { font-size: 13px; font-weight: 700; color: #34d399; min-width: 30px; text-align: right; }
 
         .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .confirm-modal { background: #161616; border: 1px solid #2a2a2a; border-radius: 12px; padding: 24px; max-width: 340px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
@@ -569,21 +742,29 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
         .progress-bar-fill { height: 100%; background: #fff; border-radius: 6px; transition: width 0.4s; }
         .scrape-status { background: #0c0c0c; border: 1px solid #1f1f1f; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 
-        .user-email { font-size: 11px; color: #3a3a3a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+        .kw-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 8px; border-radius: 5px; border: 1px solid; cursor: pointer; transition: all 0.1s; }
 
+        .user-email { font-size: 11px; color: #3a3a3a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
         .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #fff; border-radius: 8px; padding: 10px 18px; font-size: 12px; font-weight: 600; color: #000; z-index: 500; transition: transform 0.3s; white-space: nowrap; }
         .toast.show { transform: translateX(-50%) translateY(0); }
         .empty { text-align: center; padding: 48px 24px; color: #3a3a3a; font-size: 13px; }
+        .aging-badge { font-size: 10px; background: rgba(249,115,22,0.1); color: #f97316; border: 1px solid rgba(249,115,22,0.2); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
       `}</style>
 
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
+      {/* TOP BAR */}
       <div className="top-bar">
-        <div className="logo">LeadFlow</div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div className="logo">LeadFlow</div>
+          <span className="role-badge" style={{background:roleColor(role).bg,color:roleColor(role).color}}>{role.replace("_"," ")}</span>
+        </div>
         <div className="top-actions">
-          <span className="user-email">{session.user.email}</span>
+          <span className="user-email">{profile.name || session.user.email}</span>
           <button className="btn" onClick={() => setShowFindLeads(true)}>Find Leads</button>
-          <button className="btn" onClick={() => setShowAgentMgr(true)}>Agents</button>
+          {canSeeAll && <button className="btn" onClick={() => { setShowUserMgr(true); setUserError(""); setUserSuccess(""); }}>Team</button>}
+          {canSeeAll && <button className="btn" onClick={() => { setShowLeaderboard(true); }}>Leaderboard</button>}
+          {canSeeAll && <button className="btn" onClick={() => { setShowAuditLog(true); fetchAuditLogs(); }}>Audit Log</button>}
           <button className="btn btn-primary" onClick={() => setShowAddLead(true)}>+ Add Lead</button>
           <button className="btn" onClick={exportCSV}>Export CSV</button>
           <button className="btn" onClick={fetchLeads}>↻</button>
@@ -593,6 +774,8 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
 
       <div className="page">
         <div className="section-label">{hasActiveFilters ? `Filtered — ${filtered.length} of ${leads.length} leads` : "Overview"}</div>
+
+        {/* STATS */}
         <div className="stat-grid">
           <div className={`stat-box${!statClick&&!hasActiveFilters?" active":""}`} onClick={clearAllFilters}>
             <div className="stat-num">{leads.length}</div>
@@ -610,8 +793,13 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
             <div className="stat-num">{stats.converted}</div>
             <div className="stat-lbl">Converted</div>
           </div>
+          <div className={`stat-box aging${statClick==="aging"?" active":""}`} onClick={() => handleStatClick("aging")}>
+            <div className="stat-num">{agingCount}</div>
+            <div className="stat-lbl">Aging ({AGING_DAYS}d+)</div>
+          </div>
         </div>
 
+        {/* FILTERS */}
         <div className="filters-section">
           <div className="filters-top">
             <span className="filters-title">Filters</span>
@@ -641,19 +829,44 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
           </div>
         </div>
 
+        {/* BULK BAR */}
         {selectedIds.size > 0 && (
           <div className="bulk-bar">
             <span>{selectedIds.size} selected</span>
+            {canSeeAll && (
+              <select className="filter-select" style={{maxWidth:180}} onChange={async e => {
+                const agent = e.target.value;
+                if (!agent) return;
+                const ids = [...selectedIds];
+                for (const id of ids) {
+                  await supabase.from("leads").update({ agent, status:"Assigned" }).eq("id", id);
+                }
+                await logAudit("Bulk assigned", "leads", "bulk", { agent, count: ids.length });
+                showToast(`${ids.length} leads assigned to ${agent}`);
+                setSelectedIds(new Set());
+                fetchLeads();
+                e.target.value = "";
+              }}>
+                <option value="">Bulk assign to…</option>
+                {teamMembers.filter(m => m.role === "agent").map(m => <option key={m.id}>{m.name}</option>)}
+              </select>
+            )}
             <button className="btn btn-danger" onClick={() => setConfirmDelete(true)}>Delete selected</button>
             <button className="btn" onClick={() => setSelectedIds(new Set())}>Clear</button>
           </div>
         )}
 
+        {/* TABLE */}
         <div className="table-wrap">
           <div className="table-header">
             <div style={{display:"flex",alignItems:"center"}}>
               <span className="table-title">Leads</span>
               <span className="lead-count">{filtered.length}</span>
+              {agingCount > 0 && statClick !== "aging" && (
+                <span className="aging-badge" style={{cursor:"pointer"}} onClick={() => handleStatClick("aging")}>
+                  {agingCount} aging
+                </span>
+              )}
             </div>
             <span style={{fontSize:11,color:"#3a3a3a"}}>Tap row for details</span>
           </div>
@@ -661,14 +874,12 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
             {loading ? (
               <div className="empty">Loading…</div>
             ) : filtered.length === 0 ? (
-              <div className="empty">No leads yet — use Find Leads or Add Lead to get started</div>
+              <div className="empty">No leads found</div>
             ) : (
               <table>
                 <thead>
                   <tr>
-                    <th className="check">
-                      <input type="checkbox" onChange={toggleSelectAll} checked={selectedIds.size===pageLeads.length&&pageLeads.length>0} />
-                    </th>
+                    <th className="check"><input type="checkbox" onChange={toggleSelectAll} checked={selectedIds.size===pageLeads.length&&pageLeads.length>0} /></th>
                     <th>Name</th><th>Phone</th><th>Location</th><th>Tier</th>
                     <th>Score</th><th>Business</th><th>Status</th><th>Agent</th>
                   </tr>
@@ -676,21 +887,15 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
                 <tbody>
                   {pageLeads.map(l => {
                     const tc = tierColor(l.tier);
+                    const aging = isAging(l);
                     return (
-                      <tr key={l.id} className={selectedIds.has(l.id)?"row-selected":""} onClick={() => { setSelected(l); setAssignAgent(l.agent||""); setEditMode(false); }}>
-                        <td className="check" onClick={e => toggleSelect(l.id, e)}>
-                          <input type="checkbox" checked={selectedIds.has(l.id)} onChange={()=>{}} />
-                        </td>
-                        <td className="name">{l.name}</td>
+                      <tr key={l.id} className={`${selectedIds.has(l.id)?"row-selected":""} ${aging?"row-aging":""}`} onClick={() => openLead(l)}>
+                        <td className="check" onClick={e => toggleSelect(l.id, e)}><input type="checkbox" checked={selectedIds.has(l.id)} onChange={()=>{}} /></td>
+                        <td className="name">{l.name}{aging && <span className="aging-badge">aging</span>}</td>
                         <td style={{fontSize:11,whiteSpace:"nowrap"}}>{l.phone||"—"}</td>
                         <td style={{whiteSpace:"nowrap",fontSize:11}}>{l.location}</td>
                         <td><span className="pill" style={{background:tc.bg,color:tc.color}}>{l.tier}</span></td>
-                        <td>
-                          <div className="score-wrap">
-                            <div className="score-bar"><div className="score-fill" style={{width:`${l.score}%`}}/></div>
-                            <span style={{fontSize:11,color:"#525252",minWidth:22,textAlign:"right"}}>{l.score}</span>
-                          </div>
-                        </td>
+                        <td><div className="score-wrap"><div className="score-bar"><div className="score-fill" style={{width:`${l.score}%`}}/></div><span style={{fontSize:11,color:"#525252",minWidth:22,textAlign:"right"}}>{l.score}</span></div></td>
                         <td style={{fontSize:11,whiteSpace:"nowrap"}}>{l.business_type||"—"}</td>
                         <td><div className="status-dot"><div className="dot-circle" style={{background:statusColor(l.status)}}/><span style={{fontSize:11}}>{l.status}</span></div></td>
                         <td style={{fontSize:11,color:l.agent?"#a3a3a3":"#2a2a2a",whiteSpace:"nowrap"}}>{l.agent||"—"}</td>
@@ -708,26 +913,28 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
               {Array.from({length:Math.min(totalPages,7)},(_,i)=>(
                 <button key={i} className={`page-btn${page===i+1?" active":""}`} onClick={()=>setPage(i+1)}>{i+1}</button>
               ))}
-              {totalPages>7 && <span style={{color:"#3a3a3a",fontSize:11,padding:"0 4px"}}>…{totalPages}</span>}
+              {totalPages>7&&<span style={{color:"#3a3a3a",fontSize:11,padding:"0 4px"}}>…{totalPages}</span>}
               <button className="page-btn" disabled={page===totalPages||totalPages===0} onClick={()=>setPage(p=>p+1)}>→</button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* CONFIRM DELETE */}
       {confirmDelete && (
-        <div className="confirm-overlay" onClick={e => e.target===e.currentTarget && setConfirmDelete(false)}>
+        <div className="confirm-overlay" onClick={e=>e.target===e.currentTarget&&setConfirmDelete(false)}>
           <div className="confirm-modal">
             <div className="confirm-title">Delete {selectedIds.size} lead{selectedIds.size>1?"s":""}?</div>
-            <div className="confirm-body">This cannot be undone. Selected leads will be permanently removed.</div>
+            <div className="confirm-body">This cannot be undone.</div>
             <div className="confirm-actions">
-              <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={() => setConfirmDelete(false)}>Cancel</button>
+              <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={()=>setConfirmDelete(false)}>Cancel</button>
               <button className="btn btn-red" style={{flex:1,justifyContent:"center"}} onClick={deleteSelected}>Delete</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* LEAD DETAIL DRAWER */}
       {selected && (
         <>
           <div className="overlay" onClick={() => { setSelected(null); setEditMode(false); }} />
@@ -736,6 +943,7 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
               <span className="section-label" style={{margin:0}}>{editMode ? "Edit Lead" : "Lead Detail"}</span>
               <button className="btn" style={{padding:"5px 10px"}} onClick={() => { setSelected(null); setEditMode(false); }}>✕</button>
             </div>
+
             {editMode ? (
               <>
                 <div className="form-grid">
@@ -757,13 +965,15 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
                       <option>New</option><option>Assigned</option><option>Contacted</option><option>Converted</option>
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Agent</label>
-                    <select className="edit-select" value={editData.agent||""} onChange={e=>setEditData(p=>({...p,agent:e.target.value}))}>
-                      <option value="">— None —</option>
-                      {agents.map(a=><option key={a}>{a}</option>)}
-                    </select>
-                  </div>
+                  {canSeeAll && (
+                    <div className="form-group">
+                      <label className="form-label">Agent</label>
+                      <select className="edit-select" value={editData.agent||""} onChange={e=>setEditData(p=>({...p,agent:e.target.value}))}>
+                        <option value="">— None —</option>
+                        {teamMembers.filter(m=>m.role==="agent").map(m=><option key={m.id}>{m.name}</option>)}
+                      </select>
+                    </div>
+                  )}
                   <div className="form-group">
                     <label className="form-label">Score</label>
                     <input className="edit-input" type="number" min="0" max="100" value={editData.score||50} onChange={e=>setEditData(p=>({...p,score:e.target.value}))} />
@@ -775,115 +985,201 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
                 </div>
                 <div className="action-row">
                   <button className="btn" onClick={() => setEditMode(false)}>Cancel</button>
-                  <button className="btn btn-primary" onClick={saveEdit} disabled={saving} style={{flex:2}}>
-                    {saving ? "Saving…" : "Save Changes"}
-                  </button>
+                  <button className="btn btn-primary" onClick={saveEdit} disabled={saving} style={{flex:2}}>{saving?"Saving…":"Save Changes"}</button>
                 </div>
               </>
             ) : (
               <>
-                <div className="drawer-name">{selected.name}</div>
-                {[
-                  ["Phone",selected.phone],["Location",selected.location],
-                  ["Tier",selected.tier],["Business",selected.business_type],
-                  ["Income",selected.income],["Score",`${selected.score}/100`],
-                  ["Source",selected.source],["Status",selected.status],
-                  ["Agent",selected.agent||"—"],["Notes",selected.notes],
-                ].map(([label,value]) => value ? (
-                  <div className="drawer-row" key={label}>
-                    <span className="drawer-row-label">{label}</span>
-                    <span className="drawer-row-value">{value}</span>
+                <div className="drawer-name">{selected.name}{isAging(selected)&&<span className="aging-badge">aging</span>}</div>
+
+                {/* TABS */}
+                <div className="detail-tabs">
+                  {["info","comments","history","followups"].map(t=>(
+                    <button key={t} className={`detail-tab${detailTab===t?" active":""}`} onClick={()=>setDetailTab(t)}>
+                      {t==="info"?"Info":t==="comments"?"Comments":t==="history"?"History":"Follow-ups"}
+                    </button>
+                  ))}
+                </div>
+
+                {detailTab === "info" && (
+                  <>
+                    {[["Phone",selected.phone],["Location",selected.location],["Tier",selected.tier],["Business",selected.business_type],["Income",selected.income],["Score",`${selected.score}/100`],["Source",selected.source],["Status",selected.status],["Agent",selected.agent||"—"],["Notes",selected.notes]].map(([label,value]) => value ? (
+                      <div className="drawer-row" key={label}>
+                        <span className="drawer-row-label">{label}</span>
+                        <span className="drawer-row-value">{value}</span>
+                      </div>
+                    ) : null)}
+
+                    {canSeeAll && (
+                      <div>
+                        <div className="section-label" style={{marginBottom:4}}>Assign agent</div>
+                        <select className="assign-select" value={assignAgent} onChange={e=>setAssignAgent(e.target.value)}>
+                          <option value="">— Select —</option>
+                          {teamMembers.filter(m=>m.role==="agent").map(m=><option key={m.id}>{m.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    <div className="action-row">
+                      {canSeeAll && <button className="btn btn-primary" onClick={assignLead}>Assign</button>}
+                      <button className="btn" onClick={() => markStatus("Contacted")}>Mark Contacted</button>
+                      <button className="btn" onClick={() => markStatus("Converted")}>Mark Converted</button>
+                    </div>
+                    <div className="action-row">
+                      <button className="btn" onClick={() => { setEditMode(true); setEditData({...selected}); }}>Edit Lead</button>
+                      <button className="btn btn-danger" onClick={() => deleteSingleLead(selected.id)}>Delete</button>
+                    </div>
+                  </>
+                )}
+
+                {detailTab === "comments" && (
+                  <>
+                    <div className="comment-list">
+                      {comments.length === 0 && <div style={{fontSize:12,color:"#3a3a3a",textAlign:"center",padding:"20px 0"}}>No comments yet</div>}
+                      {comments.map(c => (
+                        <div className="comment-item" key={c.id}>
+                          <div className="comment-meta">{c.user_name} · {new Date(c.created_at).toLocaleDateString()}</div>
+                          <div className="comment-text">{c.comment}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="comment-input-row">
+                      <input className="edit-input" placeholder="Add a note…" value={newComment} onChange={e=>setNewComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addComment()} />
+                      <button className="btn btn-primary" onClick={addComment}>Add</button>
+                    </div>
+                  </>
+                )}
+
+                {detailTab === "history" && (
+                  <div className="history-list">
+                    {leadHistory.length === 0 && <div style={{fontSize:12,color:"#3a3a3a",textAlign:"center",padding:"20px 0"}}>No history yet</div>}
+                    {leadHistory.map(h => (
+                      <div className="history-item" key={h.id}>
+                        <span className="history-field">{h.field_changed}</span>: {h.old_value||"—"} → {h.new_value||"—"}
+                        <div style={{fontSize:10,color:"#3a3a3a",marginTop:2}}>{h.user_name} · {new Date(h.created_at).toLocaleDateString()}</div>
+                      </div>
+                    ))}
                   </div>
-                ) : null)}
-                <div>
-                  <div className="section-label" style={{marginBottom:4}}>Assign agent</div>
-                  <select className="assign-select" value={assignAgent} onChange={e => setAssignAgent(e.target.value)}>
-                    <option value="">— Select —</option>
-                    {agents.map(a => <option key={a}>{a}</option>)}
-                  </select>
-                </div>
-                <div className="action-row">
-                  <button className="btn btn-primary" onClick={assignLead}>Assign</button>
-                  <button className="btn" onClick={markConverted}>Mark Converted</button>
-                </div>
-                <div className="action-row">
-                  <button className="btn" onClick={() => { setEditMode(true); setEditData({...selected}); }}>Edit Lead</button>
-                  <button className="btn btn-danger" onClick={() => deleteSingleLead(selected.id)}>Delete</button>
-                </div>
+                )}
+
+                {detailTab === "followups" && (
+                  <>
+                    <div className="followup-list">
+                      {followUps.length === 0 && <div style={{fontSize:12,color:"#3a3a3a",textAlign:"center",padding:"12px 0"}}>No follow-ups set</div>}
+                      {followUps.map(f => (
+                        <div key={f.id} className={`followup-item${f.done?" done":""}${!f.done&&f.due_date<today?" overdue":""}`}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:12,color:f.done?"#525252":f.due_date<today?"#ef4444":"#d4d4d4",fontWeight:500}}>{f.due_date}</div>
+                            {f.note && <div style={{fontSize:11,color:"#525252",marginTop:2}}>{f.note}</div>}
+                          </div>
+                          {!f.done && <button className="btn" style={{padding:"4px 8px",fontSize:11}} onClick={()=>markFollowUpDone(f.id)}>Done</button>}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      <input className="edit-input" type="date" value={newFollowUp.due_date} onChange={e=>setNewFollowUp(p=>({...p,due_date:e.target.value}))} />
+                      <input className="edit-input" placeholder="Note (optional)" value={newFollowUp.note} onChange={e=>setNewFollowUp(p=>({...p,note:e.target.value}))} />
+                      <button className="btn btn-primary" onClick={addFollowUp}>Set Follow-up</button>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
         </>
       )}
 
+      {/* FIND LEADS MODAL */}
       {showFindLeads && (
-        <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setShowFindLeads(false)}>
-          <div className="modal">
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&!scrapeJob&&setShowFindLeads(false)}>
+          <div className="modal" style={{maxWidth:520}} onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span className="modal-title">Find New Leads</span>
-              <button className="btn" style={{padding:"5px 10px"}} onClick={() => setShowFindLeads(false)}>✕</button>
+              <span className="modal-title">Find Leads</span>
+              {!scrapeJob && <button className="btn" onClick={()=>setShowFindLeads(false)}>✕</button>}
             </div>
-            {scrapeStatus ? (
-              <div className="scrape-status">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontWeight:600,color:"#e5e5e5",fontSize:14}}>{scrapeStatus.status==="done"?"Done":"Scraping…"}</span>
-                  <span style={{fontSize:13,color:"#737373"}}>{scrapeStatus.added||0} leads added</span>
-                </div>
-                <div className="progress-bar-wrap">
-                  <div className="progress-bar-fill" style={{width:`${scrapeStatus.progress||0}%`}} />
-                </div>
-                <span style={{fontSize:12,color:"#525252"}}>{scrapeStatus.progress||0}% complete</span>
-                {scrapeStatus.status!=="done" && <button className="btn btn-danger" onClick={cancelScrape}>Cancel</button>}
-                {scrapeStatus.status==="done" && <button className="btn btn-primary" onClick={()=>{setScrapeStatus(null);setScrapeJob(null);}}>Search again</button>}
-              </div>
-            ) : (
+            {!scrapeJob ? (
               <>
                 <div className="form-group">
-                  <label className="form-label">State</label>
-                  <select className="form-select" onChange={e=>{const v=e.target.value;if(v&&!scrapeConfig.cities.includes(v))setScrapeConfig(p=>({...p,cities:[...p.cities,v]}));}}>
-                    <option value="">— Select a state —</option>
-                    {NIGERIAN_STATES.map(s=><option key={s}>{s}</option>)}
-                  </select>
-                  {scrapeConfig.cities.length>0&&(
-                    <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
-                      {scrapeConfig.cities.map(c=>(
-                        <span key={c} style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:5,padding:"3px 8px",fontSize:11,color:"#a3a3a3",display:"flex",alignItems:"center",gap:5}}>
-                          {c}<span style={{cursor:"pointer",color:"#525252"}} onClick={()=>setScrapeConfig(p=>({...p,cities:p.cities.filter(x=>x!==c)}))}>✕</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <label className="form-label">States</label>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6,maxHeight:110,overflowY:"auto",background:"#0c0c0c",border:"1px solid #1f1f1f",borderRadius:7,padding:8}}>
+                    {NIGERIAN_STATES.map(s=>{
+                      const checked=scrapeConfig.cities.includes(s);
+                      return <label key={s} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,color:checked?"#e5e5e5":"#525252",cursor:"pointer",whiteSpace:"nowrap"}}>
+                        <input type="checkbox" checked={checked} onChange={()=>setScrapeConfig(c=>({...c,cities:checked?c.cities.filter(x=>x!==s):[...c.cities,s]}))} />{s}
+                      </label>;
+                    })}
+                  </div>
+                  <span style={{fontSize:11,color:"#3a3a3a"}}>{scrapeConfig.cities.length} selected</span>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Business Type</label>
-                  <select className="form-select" onChange={e=>{const v=e.target.value;if(v&&!scrapeConfig.business_types.includes(v))setScrapeConfig(p=>({...p,business_types:[...p.business_types,v]}));}}>
-                    <option value="">— Select a business type —</option>
-                    {BUSINESS_TYPES.map(b=><option key={b}>{b}</option>)}
-                  </select>
-                  {scrapeConfig.business_types.length>0&&(
-                    <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
-                      {scrapeConfig.business_types.map(b=>(
-                        <span key={b} style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:5,padding:"3px 8px",fontSize:11,color:"#a3a3a3",display:"flex",alignItems:"center",gap:5}}>
-                          {b}<span style={{cursor:"pointer",color:"#525252"}} onClick={()=>setScrapeConfig(p=>({...p,business_types:p.business_types.filter(x=>x!==b)}))}>✕</span>
-                        </span>
-                      ))}
+                  <label className="form-label">Business Types</label>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6,maxHeight:110,overflowY:"auto",background:"#0c0c0c",border:"1px solid #1f1f1f",borderRadius:7,padding:8}}>
+                    {BUSINESS_TYPES.map(b=>{
+                      const checked=scrapeConfig.business_types.includes(b);
+                      return <label key={b} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,color:checked?"#e5e5e5":"#525252",cursor:"pointer",whiteSpace:"nowrap"}}>
+                        <input type="checkbox" checked={checked} onChange={()=>setScrapeConfig(c=>{
+                          const newTypes=checked?c.business_types.filter(x=>x!==b):[...c.business_types,b];
+                          const newKwMap={...c.keywords_map};
+                          if(checked)delete newKwMap[b]; else newKwMap[b]=BUSINESS_KEYWORDS[b]||[b];
+                          return {...c,business_types:newTypes,keywords_map:newKwMap};
+                        })} />{b}
+                      </label>;
+                    })}
+                  </div>
+                  <span style={{fontSize:11,color:"#3a3a3a"}}>{scrapeConfig.business_types.length} selected</span>
+                </div>
+                {scrapeConfig.business_types.length > 0 && (
+                  <div className="form-group">
+                    <label className="form-label">Keywords</label>
+                    <div style={{display:"flex",flexDirection:"column",gap:10,background:"#0c0c0c",border:"1px solid #1f1f1f",borderRadius:7,padding:10}}>
+                      {scrapeConfig.business_types.map(btype=>{
+                        const allKws=BUSINESS_KEYWORDS[btype]||[btype];
+                        const selectedKws=scrapeConfig.keywords_map?.[btype]||allKws;
+                        return (
+                          <div key={btype}>
+                            <div style={{fontSize:11,color:"#a3a3a3",fontWeight:600,marginBottom:5}}>{btype}</div>
+                            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                              {allKws.map(kw=>{
+                                const on=selectedKws.includes(kw);
+                                return <label key={kw} className="kw-pill" style={{background:on?"#1f1f1f":"transparent",borderColor:on?"#2a2a2a":"#1a1a1a",color:on?"#e5e5e5":"#525252"}}>
+                                  <input type="checkbox" checked={on} style={{display:"none"}} onChange={()=>setScrapeConfig(c=>{
+                                    const cur=c.keywords_map?.[btype]||allKws;
+                                    const updated=on?cur.filter(k=>k!==kw):[...cur,kw];
+                                    return {...c,keywords_map:{...c.keywords_map,[btype]:updated}};
+                                  })} />{kw}
+                                </label>;
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="form-group">
-                  <label className="form-label">Max results per search (1–20)</label>
-                  <input className="form-input" type="number" min="1" max="20" value={scrapeConfig.max_per_search} onChange={e=>setScrapeConfig(p=>({...p,max_per_search:Number(e.target.value)}))} />
+                  <label className="form-label">Max Total Leads</label>
+                  <input type="number" min={1} max={500} className="form-input" value={scrapeConfig.max_total} onChange={e=>setScrapeConfig(c=>({...c,max_total:parseInt(e.target.value)||20}))} />
+                  <span style={{fontSize:11,color:"#3a3a3a"}}>Scraper stops once this many leads are added</span>
                 </div>
-                <div className="action-row">
+                <div style={{display:"flex",gap:8}}>
+                  <button className="btn btn-primary" style={{flex:1}} onClick={startScrape}>Start Scraping</button>
                   <button className="btn" onClick={()=>setShowFindLeads(false)}>Cancel</button>
-                  <button className="btn btn-primary" onClick={startScrape} style={{flex:2,justifyContent:"center"}}>Start Finding Leads</button>
                 </div>
               </>
+            ) : (
+              <div className="scrape-status">
+                <div style={{fontSize:13,color:"#a3a3a3"}}>Status: <strong style={{color:"#e5e5e5"}}>{scrapeStatus?.status}</strong></div>
+                <div style={{fontSize:13,color:"#a3a3a3"}}>Leads added: <strong style={{color:"#e5e5e5"}}>{scrapeStatus?.added??0}</strong><span style={{color:"#525252"}}> / {scrapeConfig.max_total}</span></div>
+                <div className="progress-bar-wrap"><div className="progress-bar-fill" style={{width:`${scrapeStatus?.progress??0}%`}}/></div>
+                <div style={{fontSize:11,color:"#525252"}}>{scrapeStatus?.progress??0}% complete</div>
+                {scrapeStatus?.status!=="done"&&scrapeStatus?.status!=="cancelled"&&<button className="btn btn-danger" onClick={cancelScrape}>Stop</button>}
+                {(scrapeStatus?.status==="done"||scrapeStatus?.status==="cancelled")&&<button className="btn btn-primary" onClick={()=>{setScrapeJob(null);setScrapeStatus(null);setShowFindLeads(false);}}>Done</button>}
+              </div>
             )}
           </div>
         </div>
       )}
 
+      {/* ADD LEAD MODAL */}
       {showAddLead && (
         <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowAddLead(false)}>
           <div className="modal">
@@ -941,25 +1237,112 @@ const [scrapeConfig, setScrapeConfig] = useState({ cities: [], business_types: [
         </div>
       )}
 
-      {showAgentMgr && (
-        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowAgentMgr(false)}>
-          <div className="modal">
+      {/* TEAM MANAGEMENT MODAL */}
+      {showUserMgr && canSeeAll && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowUserMgr(false)}>
+          <div className="modal" style={{maxWidth:560}} onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span className="modal-title">Manage Agents</span>
-              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowAgentMgr(false)}>✕</button>
+              <span className="modal-title">Team Management</span>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowUserMgr(false)}>✕</button>
             </div>
-            <div style={{display:"flex",gap:7}}>
-              <input className="form-input" placeholder="Agent full name" value={newAgentName} onChange={e=>setNewAgentName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addAgent()} />
-              <button className="btn btn-primary" onClick={addAgent}>Add</button>
-            </div>
-            <div className="agent-list">
-              {agents.map(a=>(
-                <div className="agent-item" key={a}>
-                  <span>{a}</span>
-                  <button className="btn btn-danger" style={{padding:"4px 10px",fontSize:11}} onClick={()=>removeAgent(a)}>Remove</button>
+            <div style={{background:"#0c0c0c",border:"1px solid #1f1f1f",borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:10}}>
+              <div style={{fontSize:12,fontWeight:600,color:"#a3a3a3"}}>Create New User</div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <input className="form-input" placeholder="e.g. Emeka Obi" value={newUser.name} onChange={e=>setNewUser(p=>({...p,name:e.target.value}))} />
                 </div>
-              ))}
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input className="form-input" type="email" placeholder="agent@bank.com" value={newUser.email} onChange={e=>setNewUser(p=>({...p,email:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <input className="form-input" type="password" placeholder="Min 8 chars" value={newUser.password} onChange={e=>setNewUser(p=>({...p,password:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Role</label>
+                  <select className="form-select" value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))}>
+                    <option value="agent">Agent</option>
+                    {isAdmin && <option value="branch_manager">Branch Manager</option>}
+                  </select>
+                </div>
+              </div>
+              {userError && <div style={{fontSize:12,color:"#ef4444",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:6,padding:"8px 10px"}}>{userError}</div>}
+              {userSuccess && <div style={{fontSize:12,color:"#34d399",background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:6,padding:"8px 10px"}}>{userSuccess}</div>}
+              <button className="btn btn-primary" onClick={createUser} disabled={creatingUser}>{creatingUser?"Creating…":"Create User"}</button>
             </div>
+            <div style={{fontSize:12,fontWeight:600,color:"#a3a3a3",marginTop:4}}>Team Members ({teamMembers.length})</div>
+            <div style={{overflowX:"auto"}}>
+              <table className="user-table">
+                <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Joined</th></tr></thead>
+                <tbody>
+                  {teamMembers.map(m=>(
+                    <tr key={m.id}>
+                      <td>{m.name}</td>
+                      <td><span className="role-badge" style={{background:roleColor(m.role).bg,color:roleColor(m.role).color}}>{m.role.replace("_"," ")}</span></td>
+                      <td style={{fontSize:11}}>{m.user_id}</td>
+                      <td style={{fontSize:11}}>{new Date(m.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LEADERBOARD MODAL */}
+      {showLeaderboard && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowLeaderboard(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span className="modal-title">Agent Leaderboard</span>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowLeaderboard(false)}>✕</button>
+            </div>
+            {leaderboard.length === 0 ? (
+              <div style={{fontSize:13,color:"#3a3a3a",textAlign:"center",padding:"24px 0"}}>No agents yet</div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {leaderboard.map((a,i)=>(
+                  <div key={a.name} className="lb-row">
+                    <div className="lb-rank">#{i+1}</div>
+                    <div className="lb-name">{a.name}</div>
+                    <div className="lb-stat">{a.assigned} assigned</div>
+                    <div className="lb-converted">{a.converted} converted</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{fontSize:11,color:"#3a3a3a",textAlign:"center"}}>Ranked by conversions</div>
+          </div>
+        </div>
+      )}
+
+      {/* AUDIT LOG MODAL */}
+      {showAuditLog && canSeeAll && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowAuditLog(false)}>
+          <div className="modal" style={{maxWidth:600}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span className="modal-title">Audit Log</span>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowAuditLog(false)}>✕</button>
+            </div>
+            {auditLoading ? (
+              <div style={{fontSize:13,color:"#525252",textAlign:"center",padding:"24px 0"}}>Loading…</div>
+            ) : (
+              <div className="audit-list">
+                {auditLogs.length === 0 && <div style={{fontSize:13,color:"#3a3a3a",textAlign:"center",padding:"24px 0"}}>No activity yet</div>}
+                {auditLogs.map(log=>(
+                  <div key={log.id} className="audit-item">
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <span style={{color:"#d4d4d4",fontWeight:500}}>{log.action}</span>
+                      <span style={{fontSize:10,color:"#3a3a3a",whiteSpace:"nowrap",marginLeft:8}}>{new Date(log.created_at).toLocaleString()}</span>
+                    </div>
+                    <div className="audit-meta">{log.user_name} · {log.target_type}{log.details&&Object.keys(log.details).length>0?" · "+JSON.stringify(log.details):""}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
