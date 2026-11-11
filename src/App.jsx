@@ -230,7 +230,7 @@ function Dashboard({ session, profile, onLogout }) {
 
   const [teamMembers, setTeamMembers]   = useState([]);
   const [showUserMgr, setShowUserMgr]   = useState(false);
-  const [newUser, setNewUser]           = useState({ name:"", email:"", password:"", role:"agent" });
+  const [newUser, setNewUser]           = useState({ name:"", email:"", password:"", role:"agent", branch:"" });
   const [creatingUser, setCreatingUser] = useState(false);
   const [userError, setUserError]       = useState("");
   const [userSuccess, setUserSuccess]   = useState("");
@@ -294,6 +294,8 @@ function Dashboard({ session, profile, onLogout }) {
     setLoading(true);
     let query = supabase.from("leads").select("*").order("created_at", { ascending: false });
     if (isAgent) query = query.eq("agent", profile.name);
+    // Branch managers only see leads in their branch
+    if (isBM && profile.branch) query = query.eq("branch", profile.branch);
     const { data, error } = await query;
     if (!error) setLeads(data || []);
     setLoading(false);
@@ -301,7 +303,10 @@ function Dashboard({ session, profile, onLogout }) {
 
   async function fetchTeamMembers() {
     if (!canSeeAll) return;
-    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    let query = supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    // Branch managers only see their own branch's team
+    if (isBM && profile.branch) query = query.eq("branch", profile.branch);
+    const { data } = await query;
     setTeamMembers(data || []);
   }
 
@@ -465,7 +470,7 @@ function Dashboard({ session, profile, onLogout }) {
     setCreatingUser(false);
     if (data.error) return setUserError(data.error);
     setUserSuccess(`${newUser.role === "agent" ? "Agent" : "Branch Manager"} "${newUser.name}" created!`);
-    setNewUser({ name:"", email:"", password:"", role:"agent" });
+    setNewUser({ name:"", email:"", password:"", role:"agent", branch:"" });
     fetchTeamMembers();
   }
 
@@ -760,7 +765,7 @@ function Dashboard({ session, profile, onLogout }) {
           <span className="role-badge" style={{background:roleColor(role).bg,color:roleColor(role).color}}>{role.replace("_"," ")}</span>
         </div>
         <div className="top-actions">
-          <span className="user-email">{profile.name || session.user.email}</span>
+          <span className="user-email">{profile.name || session.user.email}{isBM && profile.branch ? ` · ${profile.branch}` : ""}</span>
           <button className="btn" onClick={() => setShowFindLeads(true)}>Find Leads</button>
           {canSeeAll && <button className="btn" onClick={() => { setShowUserMgr(true); setUserError(""); setUserSuccess(""); }}>Team</button>}
           {canSeeAll && <button className="btn" onClick={() => { setShowLeaderboard(true); }}>Leaderboard</button>}
@@ -1267,6 +1272,20 @@ function Dashboard({ session, profile, onLogout }) {
                     {isAdmin && <option value="branch_manager">Branch Manager</option>}
                   </select>
                 </div>
+                {/* Branch field: admin picks for BM/agent; BM sees their own branch pre-filled */}
+                {isAdmin ? (
+                  <div className="form-group" style={{gridColumn:"1/-1"}}>
+                    <label className="form-label">Branch</label>
+                    <input className="form-input" placeholder="e.g. Lagos Island, Abuja Central" value={newUser.branch} onChange={e=>setNewUser(p=>({...p,branch:e.target.value}))} />
+                    <span style={{fontSize:11,color:"#3a3a3a"}}>Required for Branch Managers. Agents inherit their BM's branch.</span>
+                  </div>
+                ) : isBM && profile.branch ? (
+                  <div className="form-group" style={{gridColumn:"1/-1"}}>
+                    <label className="form-label">Branch</label>
+                    <input className="form-input" value={profile.branch} disabled style={{opacity:0.5}} />
+                    <span style={{fontSize:11,color:"#3a3a3a"}}>Agent will be assigned to your branch automatically.</span>
+                  </div>
+                ) : null}
               </div>
               {userError && <div style={{fontSize:12,color:"#ef4444",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:6,padding:"8px 10px"}}>{userError}</div>}
               {userSuccess && <div style={{fontSize:12,color:"#34d399",background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:6,padding:"8px 10px"}}>{userSuccess}</div>}
@@ -1275,13 +1294,13 @@ function Dashboard({ session, profile, onLogout }) {
             <div style={{fontSize:12,fontWeight:600,color:"#a3a3a3",marginTop:4}}>Team Members ({teamMembers.length})</div>
             <div style={{overflowX:"auto"}}>
               <table className="user-table">
-                <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Joined</th></tr></thead>
+                <thead><tr><th>Name</th><th>Role</th><th>Branch</th><th>Joined</th></tr></thead>
                 <tbody>
                   {teamMembers.map(m=>(
                     <tr key={m.id}>
                       <td>{m.name}</td>
                       <td><span className="role-badge" style={{background:roleColor(m.role).bg,color:roleColor(m.role).color}}>{m.role.replace("_"," ")}</span></td>
-                      <td style={{fontSize:11}}>{m.user_id}</td>
+                      <td style={{fontSize:11,color:m.branch?"#a3a3a3":"#3a3a3a"}}>{m.branch||"—"}</td>
                       <td style={{fontSize:11}}>{new Date(m.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
