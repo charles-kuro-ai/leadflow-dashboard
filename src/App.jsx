@@ -269,6 +269,12 @@ function Dashboard({ session, profile, onLogout }) {
 
   const [showApprovals, setShowApprovals] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showTargets, setShowTargets]         = useState(false);
+  const [targets, setTargets]                 = useState([]);
+  const [targetsLoading, setTargetsLoading]   = useState(false);
+  const [newTarget, setNewTarget]             = useState({ branch:"", agent_name:"", target_count:"" });
+  const [savingTarget, setSavingTarget]       = useState(false);
+  const currentMonth = new Date().toISOString().slice(0,7); // "2026-11"
 
   const [detailTab, setDetailTab]         = useState("info");
   const [comments, setComments]           = useState([]);
@@ -495,6 +501,40 @@ function Dashboard({ session, profile, onLogout }) {
     clearInterval(pollRef.current); setScrapeJob(null); setScrapeStatus(null);
   }
 
+  async function fetchTargets() {
+    setTargetsLoading(true);
+    let query = supabase.from("targets").select("*").eq("month", currentMonth).order("created_at", { ascending: false });
+    if (isBM && profile.branch) query = query.eq("branch", profile.branch);
+    const { data } = await query;
+    setTargets(data || []);
+    setTargetsLoading(false);
+  }
+
+  async function saveTarget() {
+    if (!newTarget.target_count || Number(newTarget.target_count) <= 0) return showToast("Enter a valid target number","error");
+    setSavingTarget(true);
+    const row = {
+      month: currentMonth,
+      target_count: Number(newTarget.target_count),
+      created_by: userId,
+      branch: isBM ? profile.branch : (newTarget.branch || null),
+      agent_name: newTarget.agent_name || null,
+    };
+    const { error } = await supabase.from("targets").insert([row]);
+    setSavingTarget(false);
+    if (!error) {
+      showToast("Target saved","success");
+      setNewTarget({ branch:"", agent_name:"", target_count:"" });
+      fetchTargets();
+    } else showToast("Error saving target","error");
+  }
+
+  async function deleteTarget(id) {
+    await supabase.from("targets").delete().eq("id", id);
+    showToast("Target removed","info");
+    fetchTargets();
+  }
+
   async function fetchAuditLogs() {
     setAuditLoading(true);
     const { data:{ session:s } } = await supabase.auth.getSession();
@@ -568,6 +608,7 @@ function Dashboard({ session, profile, onLogout }) {
     ...(canSeeAll ? [{ id:"approvals", icon:"⏳", label:"Approvals", badge:stats.pending }] : []),
     ...(canSeeAll ? [{ id:"team",      icon:"◉", label:"Team" }] : []),
     ...(canSeeAll ? [{ id:"leaderboard",icon:"▲", label:"Leaderboard" }] : []),
+    ...(canSeeAll ? [{ id:"targets",   icon:"◎", label:"Targets" }] : []),
     ...(canSeeAll ? [{ id:"audit",     icon:"≡", label:"Audit Log" }] : []),
   ];
 
@@ -576,6 +617,7 @@ function Dashboard({ session, profile, onLogout }) {
     if (id==="approvals") { setShowApprovals(true); setSidebarOpen(false); return; }
     if (id==="team") { setShowUserMgr(true); setUserError(""); setUserSuccess(""); setSidebarOpen(false); return; }
     if (id==="leaderboard") { setShowLeaderboard(true); setSidebarOpen(false); return; }
+    if (id==="targets") { setShowTargets(true); fetchTargets(); setSidebarOpen(false); return; }
     if (id==="audit") { setShowAuditLog(true); fetchAuditLogs(); setSidebarOpen(false); return; }
     setActivePage(id); setSidebarOpen(false);
   }
@@ -1491,6 +1533,86 @@ function Dashboard({ session, profile, onLogout }) {
                 </div>
               )}
               <div style={{fontSize:11,color:"#1e3a5f",textAlign:"center"}}>Ranked by number of conversions</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TARGETS MODAL */}
+      {showTargets&&canSeeAll&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowTargets(false)}>
+          <div className="modal" style={{maxWidth:640}} onClick={e=>e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title">Performance Targets — {currentMonth}</span>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowTargets(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+
+              {/* SET NEW TARGET */}
+              <div style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:16,marginBottom:16}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12}}>Set Target</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:8,alignItems:"end"}}>
+                  {isAdmin&&(
+                    <div>
+                      <div style={{fontSize:10,color:"#475569",marginBottom:4}}>Branch</div>
+                      <input className="fi" placeholder="e.g. Lagos Island" value={newTarget.branch} onChange={e=>setNewTarget(p=>({...p,branch:e.target.value}))} />
+                    </div>
+                  )}
+                  <div>
+                    <div style={{fontSize:10,color:"#475569",marginBottom:4}}>Agent (optional)</div>
+                    <select className="fi" value={newTarget.agent_name} onChange={e=>setNewTarget(p=>({...p,agent_name:e.target.value}))}>
+                      <option value="">Whole branch</option>
+                      {teamMembers.filter(m=>m.role==="agent"&&(!isBM||m.branch===profile.branch)).map(m=>(
+                        <option key={m.id} value={m.name}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{fontSize:10,color:"#475569",marginBottom:4}}>Target conversions</div>
+                    <input className="fi" type="number" min="1" placeholder="e.g. 20" value={newTarget.target_count} onChange={e=>setNewTarget(p=>({...p,target_count:e.target.value}))} />
+                  </div>
+                  <button className="btn btn-gold" onClick={saveTarget} disabled={savingTarget} style={{whiteSpace:"nowrap"}}>
+                    {savingTarget?"Saving…":"Set Target"}
+                  </button>
+                </div>
+              </div>
+
+              {/* TARGETS LIST WITH PROGRESS */}
+              {targetsLoading?(
+                <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>Loading…</div>
+              ):targets.length===0?(
+                <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>No targets set for {currentMonth} yet.</div>
+              ):(
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {targets.map(t=>{
+                    const scope = t.agent_name || t.branch || "All";
+                    const actual = t.agent_name
+                      ? leads.filter(l=>l.agent===t.agent_name&&l.status==="Converted").length
+                      : leads.filter(l=>(!t.branch||l.branch===t.branch)&&l.status==="Converted").length;
+                    const pct = Math.min(Math.round((actual/t.target_count)*100),100);
+                    const color = pct>=100?"#22c55e":pct>=60?"#c9a84c":"#ef4444";
+                    return (
+                      <div key={t.id} style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:14}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                          <div>
+                            <span style={{fontSize:13,fontWeight:700,color:"#cbd5e1"}}>{scope}</span>
+                            {t.agent_name&&<span style={{marginLeft:6,fontSize:10,color:"#475569",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:4,padding:"1px 6px"}}>agent</span>}
+                            {!t.agent_name&&t.branch&&<span style={{marginLeft:6,fontSize:10,color:"#475569",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:4,padding:"1px 6px"}}>branch</span>}
+                          </div>
+                          <div style={{display:"flex",alignItems:"center",gap:10}}>
+                            <span style={{fontSize:12,fontWeight:700,color}}>{actual}/{t.target_count}</span>
+                            <span style={{fontSize:11,color,fontWeight:600}}>{pct}%</span>
+                            {isAdmin&&<button onClick={()=>deleteTarget(t.id)} style={{background:"none",border:"none",color:"#334155",fontSize:14,cursor:"pointer",padding:"0 2px"}} title="Remove">✕</button>}
+                          </div>
+                        </div>
+                        <div style={{height:6,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:`${pct}%`,background:color,borderRadius:3,transition:"width 0.4s"}} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
