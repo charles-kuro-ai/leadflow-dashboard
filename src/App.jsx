@@ -258,7 +258,8 @@ function Dashboard({ session, profile, onLogout }) {
   const [saving, setSaving]               = useState(false);
 
   const [showFindLeads, setShowFindLeads] = useState(false);
-  const [scrapeConfig, setScrapeConfig]   = useState({ cities:[], business_types:[], keywords_map:{}, max_total:20 });
+  const [scrapeConfig, setScrapeConfig]   = useState({ cities:[], business_types:[], keywords_map:{}, max_total:50 });
+  const [scrapeDropdown, setScrapeDropdown] = useState({ states:false, types:false, keywords:false });
   const [scrapeJob, setScrapeJob]         = useState(null);
   const [scrapeStatus, setScrapeStatus]   = useState(null);
   const pollRef = useRef(null);
@@ -269,6 +270,7 @@ function Dashboard({ session, profile, onLogout }) {
 
   const [showApprovals, setShowApprovals] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [auditSearch, setAuditSearch]         = useState("");
   const [showTargets, setShowTargets]         = useState(false);
   const [targets, setTargets]                 = useState([]);
   const [targetsLoading, setTargetsLoading]   = useState(false);
@@ -299,6 +301,7 @@ function Dashboard({ session, profile, onLogout }) {
     if (to)   f = f.filter(l => l.created_at && l.created_at <= to + "T23:59:59");
     if (statClick === "new")       f = f.filter(l => l.status === "New");
     if (statClick === "assigned")  f = f.filter(l => l.status === "Assigned");
+    if (statClick === "contacted") f = f.filter(l => l.status === "Contacted");
     if (statClick === "converted") f = f.filter(l => l.status === "Converted");
     if (statClick === "pending")   f = f.filter(l => l.status === "Pending Approval");
     if (statClick === "aging")     f = f.filter(l => isAging(l));
@@ -380,7 +383,7 @@ function Dashboard({ session, profile, onLogout }) {
   async function markStatus(newStatus) {
     if (!selected) return;
     const old = selected.status;
-    const actualStatus = (isAgent && newStatus === "Converted") ? "Pending Approval" : newStatus;
+    const actualStatus = ((isAgent || isBM) && newStatus === "Converted") ? "Pending Approval" : newStatus;
     const { error } = await supabase.from("leads").update({ status:actualStatus }).eq("id",selected.id);
     if (!error) {
       await logAudit(`Marked as ${actualStatus}`,"lead",selected.id,{from:old,to:actualStatus});
@@ -475,7 +478,14 @@ function Dashboard({ session, profile, onLogout }) {
     if (!scrapeConfig.business_types.length) return showToast("Select at least one business type","error");
     try {
       const { data:{ session:s } } = await supabase.auth.getSession();
-      const r = await fetch(`${API_URL}/scrape`,{ method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${s.access_token}`}, body:JSON.stringify({...scrapeConfig}) });
+      // Send only selected keywords — backend uses exactly these, no auto-expansion
+      const payload = {
+        cities: scrapeConfig.cities,
+        business_types: scrapeConfig.business_types,
+        keywords_map: scrapeConfig.keywords_map,
+        max_total: scrapeConfig.max_total,
+      };
+      const r = await fetch(`${API_URL}/scrape`,{ method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${s.access_token}`}, body:JSON.stringify(payload) });
       const data = await r.json();
       if (data.job_id) {
         setScrapeJob(data.job_id);
@@ -588,11 +598,12 @@ function Dashboard({ session, profile, onLogout }) {
   const agingCount       = leads.filter(isAging).length;
   const pendingApprovals = leads.filter(l=>l.status==="Pending Approval");
   const stats = {
-    total:    leads.length,
-    newLeads: leads.filter(l=>l.status==="New").length,
-    assigned: leads.filter(l=>l.status==="Assigned").length,
-    converted:leads.filter(l=>l.status==="Converted").length,
-    pending:  pendingApprovals.length,
+    total:     leads.length,
+    newLeads:  leads.filter(l=>l.status==="New").length,
+    assigned:  leads.filter(l=>l.status==="Assigned").length,
+    contacted: leads.filter(l=>l.status==="Contacted").length,
+    converted: leads.filter(l=>l.status==="Converted").length,
+    pending:   pendingApprovals.length,
   };
   const hasActiveFilters = search||tierFilter||statusFilter||stateFilter||btypeFilter||dateFilter||statClick;
   const leaderboard = teamMembers.filter(m=>m.role==="agent").map(m=>({
@@ -705,7 +716,7 @@ function Dashboard({ session, profile, onLogout }) {
 
         .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 20px; }
         @media(min-width:600px){ .stat-grid { grid-template-columns: repeat(3,1fr); } }
-        @media(min-width:900px){ .stat-grid { grid-template-columns: repeat(5,1fr); } }
+        @media(min-width:900px){ .stat-grid { grid-template-columns: repeat(6,1fr); } }
         .stat-card { background: #0d1b3e; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.15s; user-select: none; }
         .stat-card:hover { border-color: rgba(201,168,76,0.2); background: #0f1f47; }
         .stat-card.active { border-color: rgba(201,168,76,0.4); background: #0f1f47; }
@@ -910,6 +921,10 @@ function Dashboard({ session, profile, onLogout }) {
               <div className={`stat-card${statClick==="assigned"?" active":""}`} onClick={()=>handleStatClick("assigned")}>
                 <div className="stat-num">{stats.assigned}</div>
                 <div className="stat-lbl">Assigned</div>
+              </div>
+              <div className={`stat-card${statClick==="contacted"?" active":""}`} onClick={()=>handleStatClick("contacted")}>
+                <div className="stat-num" style={{color:"#60a5fa"}}>{stats.contacted}</div>
+                <div className="stat-lbl">Contacted</div>
               </div>
               {canSeeAll && (
                 <div className={`stat-card pending-card${statClick==="pending"?" active":""}`} onClick={()=>handleStatClick("pending")}>
@@ -1251,78 +1266,129 @@ function Dashboard({ session, profile, onLogout }) {
 
       {/* FIND LEADS MODAL */}
       {showFindLeads&&(
-        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&!scrapeJob&&setShowFindLeads(false)}>
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&!scrapeJob&&(setShowFindLeads(false),setScrapeDropdown({states:false,types:false,keywords:false}))}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <span className="modal-title">Find Leads</span>
-              {!scrapeJob&&<button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowFindLeads(false)}>✕</button>}
+              {!scrapeJob&&<button className="btn" style={{padding:"5px 10px"}} onClick={()=>{setShowFindLeads(false);setScrapeDropdown({states:false,types:false,keywords:false});}}>✕</button>}
             </div>
             <div className="modal-body">
               {!scrapeJob?(
                 <>
-                  <div className="form-group">
+                  {/* STATES DROPDOWN */}
+                  <div className="form-group" style={{position:"relative"}}>
                     <label className="form-label">States</label>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:6,maxHeight:110,overflowY:"auto",background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:8,padding:10}}>
-                      {NIGERIAN_STATES.map(s=>{
-                        const checked=scrapeConfig.cities.includes(s);
-                        return <label key={s} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,color:checked?"#c9a84c":"#334155",cursor:"pointer",whiteSpace:"nowrap",fontWeight:checked?600:400}}>
-                          <input type="checkbox" checked={checked} onChange={()=>setScrapeConfig(c=>({...c,cities:checked?c.cities.filter(x=>x!==s):[...c.cities,s]}))} />{s}
-                        </label>;
-                      })}
-                    </div>
-                    <span className="form-hint">{scrapeConfig.cities.length} state{scrapeConfig.cities.length!==1?"s":""} selected</span>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Business Types</label>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:6,maxHeight:110,overflowY:"auto",background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:8,padding:10}}>
-                      {BUSINESS_TYPES.map(b=>{
-                        const checked=scrapeConfig.business_types.includes(b);
-                        return <label key={b} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,color:checked?"#c9a84c":"#334155",cursor:"pointer",whiteSpace:"nowrap",fontWeight:checked?600:400}}>
-                          <input type="checkbox" checked={checked} onChange={()=>setScrapeConfig(c=>{
-                            const newTypes=checked?c.business_types.filter(x=>x!==b):[...c.business_types,b];
-                            const newKwMap={...c.keywords_map};
-                            if(checked)delete newKwMap[b]; else newKwMap[b]=BUSINESS_KEYWORDS[b]||[b];
-                            return {...c,business_types:newTypes,keywords_map:newKwMap};
-                          })} />{b}
-                        </label>;
-                      })}
-                    </div>
-                    <span className="form-hint">{scrapeConfig.business_types.length} type{scrapeConfig.business_types.length!==1?"s":""} selected</span>
-                  </div>
-                  {scrapeConfig.business_types.length>0&&(
-                    <div className="form-group">
-                      <label className="form-label">Keywords</label>
-                      <div style={{display:"flex",flexDirection:"column",gap:10,background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:8,padding:12}}>
-                        {scrapeConfig.business_types.map(btype=>{
-                          const allKws=BUSINESS_KEYWORDS[btype]||[btype];
-                          const selectedKws=scrapeConfig.keywords_map?.[btype]||allKws;
-                          return (
-                            <div key={btype}>
-                              <div style={{fontSize:10,color:"#64748b",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.08em"}}>{btype}</div>
-                              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                                {allKws.map(kw=>{
-                                  const on=selectedKws.includes(kw);
-                                  return <button key={kw} className="kw-pill" style={{background:on?"rgba(201,168,76,0.1)":"transparent",borderColor:on?"rgba(201,168,76,0.3)":"rgba(255,255,255,0.06)",color:on?"#c9a84c":"#334155"}} onClick={()=>setScrapeConfig(c=>{
-                                    const cur=c.keywords_map?.[btype]||allKws;
-                                    const updated=on?cur.filter(k=>k!==kw):[...cur,kw];
-                                    return {...c,keywords_map:{...c.keywords_map,[btype]:updated}};
-                                  })}>{kw}</button>;
-                                })}
-                              </div>
-                            </div>
-                          );
+                    <button className="form-input" style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",textAlign:"left"}}
+                      onClick={()=>setScrapeDropdown(d=>({...d,states:!d.states,types:false,keywords:false}))}>
+                      <span style={{color:scrapeConfig.cities.length?"#cbd5e1":"#1e3a5f"}}>
+                        {scrapeConfig.cities.length?`${scrapeConfig.cities.length} state${scrapeConfig.cities.length>1?"s":""} selected`:"Select states…"}
+                      </span>
+                      <span style={{color:"#334155",fontSize:10}}>{scrapeDropdown.states?"▲":"▼"}</span>
+                    </button>
+                    {scrapeDropdown.states&&(
+                      <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#0d1b3e",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:220,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+                        <div style={{padding:"8px 10px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",gap:8}}>
+                          <button style={{fontSize:11,color:"#c9a84c",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,cities:[...NIGERIAN_STATES]}))}>All</button>
+                          <button style={{fontSize:11,color:"#475569",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,cities:[]}))}>None</button>
+                        </div>
+                        {NIGERIAN_STATES.map(s=>{
+                          const on=scrapeConfig.cities.includes(s);
+                          return <label key={s} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",background:on?"rgba(201,168,76,0.05)":"transparent",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                            <input type="checkbox" checked={on} onChange={()=>setScrapeConfig(c=>({...c,cities:on?c.cities.filter(x=>x!==s):[...c.cities,s]}))} style={{accentColor:"#c9a84c"}} />
+                            <span style={{fontSize:13,color:on?"#c9a84c":"#94a3b8"}}>{s}</span>
+                          </label>;
                         })}
                       </div>
+                    )}
+                  </div>
+
+                  {/* BUSINESS TYPES DROPDOWN */}
+                  <div className="form-group" style={{position:"relative"}}>
+                    <label className="form-label">Business Types</label>
+                    <button className="form-input" style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",textAlign:"left"}}
+                      onClick={()=>setScrapeDropdown(d=>({...d,types:!d.types,states:false,keywords:false}))}>
+                      <span style={{color:scrapeConfig.business_types.length?"#cbd5e1":"#1e3a5f"}}>
+                        {scrapeConfig.business_types.length?`${scrapeConfig.business_types.length} type${scrapeConfig.business_types.length>1?"s":""} selected`:"Select business types…"}
+                      </span>
+                      <span style={{color:"#334155",fontSize:10}}>{scrapeDropdown.types?"▲":"▼"}</span>
+                    </button>
+                    {scrapeDropdown.types&&(
+                      <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#0d1b3e",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:220,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+                        <div style={{padding:"8px 10px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",gap:8}}>
+                          <button style={{fontSize:11,color:"#c9a84c",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,business_types:[...BUSINESS_TYPES],keywords_map:{}}))}>All</button>
+                          <button style={{fontSize:11,color:"#475569",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,business_types:[],keywords_map:{}}))}>None</button>
+                        </div>
+                        {BUSINESS_TYPES.map(b=>{
+                          const on=scrapeConfig.business_types.includes(b);
+                          return <label key={b} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",background:on?"rgba(201,168,76,0.05)":"transparent",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                            <input type="checkbox" checked={on} onChange={()=>setScrapeConfig(c=>{
+                              const newTypes=on?c.business_types.filter(x=>x!==b):[...c.business_types,b];
+                              const newKwMap={...c.keywords_map};
+                              if(on)delete newKwMap[b];
+                              return {...c,business_types:newTypes,keywords_map:newKwMap};
+                            })} style={{accentColor:"#c9a84c"}} />
+                            <span style={{fontSize:13,color:on?"#c9a84c":"#94a3b8"}}>{b}</span>
+                          </label>;
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* KEYWORDS DROPDOWN — only if business types selected */}
+                  {scrapeConfig.business_types.length>0&&(
+                    <div className="form-group" style={{position:"relative"}}>
+                      <label className="form-label">Keywords <span style={{color:"#334155",fontWeight:400}}>(choose which search terms to use)</span></label>
+                      <button className="form-input" style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",textAlign:"left"}}
+                        onClick={()=>setScrapeDropdown(d=>({...d,keywords:!d.keywords,states:false,types:false}))}>
+                        <span style={{color:"#cbd5e1"}}>
+                          {Object.values(scrapeConfig.keywords_map).flat().length} keyword{Object.values(scrapeConfig.keywords_map).flat().length!==1?"s":""} selected
+                        </span>
+                        <span style={{color:"#334155",fontSize:10}}>{scrapeDropdown.keywords?"▲":"▼"}</span>
+                      </button>
+                      {scrapeDropdown.keywords&&(
+                        <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#0d1b3e",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:280,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)",padding:12,display:"flex",flexDirection:"column",gap:12}}>
+                          {scrapeConfig.business_types.map(btype=>{
+                            const allKws=BUSINESS_KEYWORDS[btype]||[btype];
+                            const selectedKws=scrapeConfig.keywords_map?.[btype]||[];
+                            return (
+                              <div key={btype}>
+                                <div style={{fontSize:10,color:"#64748b",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.08em",display:"flex",justifyContent:"space-between"}}>
+                                  {btype}
+                                  <button style={{fontSize:10,color:"#c9a84c",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textTransform:"none"}}
+                                    onClick={()=>setScrapeConfig(c=>({...c,keywords_map:{...c.keywords_map,[btype]:allKws}}))}>Select all</button>
+                                </div>
+                                <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                                  {allKws.map(kw=>{
+                                    const on=selectedKws.includes(kw);
+                                    return <button key={kw} className="kw-pill" style={{background:on?"rgba(201,168,76,0.1)":"transparent",borderColor:on?"rgba(201,168,76,0.3)":"rgba(255,255,255,0.06)",color:on?"#c9a84c":"#334155"}}
+                                      onClick={()=>setScrapeConfig(c=>{
+                                        const cur=c.keywords_map?.[btype]||[];
+                                        const updated=on?cur.filter(k=>k!==kw):[...cur,kw];
+                                        return {...c,keywords_map:{...c.keywords_map,[btype]:updated}};
+                                      })}>{kw}</button>;
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
+
                   <div className="form-group">
                     <label className="form-label">Max Total Leads</label>
-                    <input type="number" min={1} max={500} className="form-input" value={scrapeConfig.max_total} onChange={e=>setScrapeConfig(c=>({...c,max_total:parseInt(e.target.value)||20}))} />
-                    <span className="form-hint">Scraper stops once this many leads are added to the database</span>
+                    <input type="number" min={1} max={500} className="form-input" value={scrapeConfig.max_total} onChange={e=>setScrapeConfig(c=>({...c,max_total:parseInt(e.target.value)||50}))} />
+                    <span className="form-hint">Scraper stops exactly at this number — not more</span>
                   </div>
                   <div style={{display:"flex",gap:8}}>
-                    <button className="btn btn-gold" style={{flex:1,justifyContent:"center"}} onClick={startScrape}>Start Scraping</button>
-                    <button className="btn" onClick={()=>setShowFindLeads(false)}>Cancel</button>
+                    <button className="btn btn-gold" style={{flex:1,justifyContent:"center"}} onClick={()=>{
+                      // Validate keywords selected
+                      const hasKeywords = scrapeConfig.business_types.every(b=>(scrapeConfig.keywords_map[b]||[]).length>0);
+                      if(!hasKeywords) return showToast("Select at least one keyword per business type","error");
+                      startScrape();
+                    }}>Start Scraping</button>
+                    <button className="btn" onClick={()=>{setShowFindLeads(false);setScrapeDropdown({states:false,types:false,keywords:false});}}>Cancel</button>
                   </div>
                 </>
               ):(
@@ -1620,29 +1686,65 @@ function Dashboard({ session, profile, onLogout }) {
 
       {/* AUDIT LOG MODAL */}
       {showAuditLog&&canSeeAll&&(
-        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowAuditLog(false)}>
-          <div className="modal" style={{maxWidth:600}} onClick={e=>e.stopPropagation()}>
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&(setShowAuditLog(false),setAuditSearch(""))}>
+          <div className="modal" style={{maxWidth:640}} onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <span className="modal-title">Audit Log</span>
-              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowAuditLog(false)}>✕</button>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>{setShowAuditLog(false);setAuditSearch("");}}>✕</button>
             </div>
             <div className="modal-body">
+              {/* Search */}
+              <div style={{marginBottom:12}}>
+                <input className="form-input" placeholder="Search by action, person, lead name…" value={auditSearch} onChange={e=>setAuditSearch(e.target.value)} style={{width:"100%"}} />
+              </div>
               {auditLoading?(
                 <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>Loading…</div>
-              ):(
-                <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:500,overflowY:"auto"}}>
-                  {auditLogs.length===0&&<div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>No activity yet</div>}
-                  {auditLogs.map(log=>(
-                    <div key={log.id} className="audit-item">
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                        <span className="audit-action">{log.action}</span>
-                        <span style={{fontSize:10,color:"#1e3a5f",whiteSpace:"nowrap",marginLeft:8}}>{new Date(log.created_at).toLocaleString()}</span>
-                      </div>
-                      <div className="audit-meta">{log.user_name} · {log.target_type}{log.details&&Object.keys(log.details).length>0?" · "+JSON.stringify(log.details):""}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              ):(()=>{
+                const filtered = auditLogs.filter(log=>{
+                  if(!auditSearch) return true;
+                  const q=auditSearch.toLowerCase();
+                  return (log.action||"").toLowerCase().includes(q)
+                    ||(log.user_name||"").toLowerCase().includes(q)
+                    ||(log.target_type||"").toLowerCase().includes(q)
+                    ||JSON.stringify(log.details||{}).toLowerCase().includes(q);
+                });
+                return filtered.length===0?(
+                  <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>
+                    {auditSearch?"No results for that search":"No activity yet"}
+                  </div>
+                ):(
+                  <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:480,overflowY:"auto"}}>
+                    {filtered.map(log=>{
+                      const d=log.details||{};
+                      const leadName=d.name||d.to||d.email||"";
+                      const dt=new Date(log.created_at);
+                      const dateStr=dt.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"});
+                      const timeStr=dt.toLocaleTimeString("en-NG",{hour:"2-digit",minute:"2-digit"});
+                      const actionColor=log.action?.toLowerCase().includes("delet")?"#ef4444":log.action?.toLowerCase().includes("approv")?"#22c55e":log.action?.toLowerCase().includes("reject")?"#f97316":"#c9a84c";
+                      return (
+                        <div key={log.id} className="audit-item">
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",flex:1}}>
+                              <span style={{fontSize:11,fontWeight:700,color:actionColor,background:`${actionColor}18`,border:`1px solid ${actionColor}30`,borderRadius:4,padding:"2px 7px",whiteSpace:"nowrap"}}>{log.action}</span>
+                              {leadName&&<span style={{fontSize:11,color:"#cbd5e1",fontWeight:600}}>· {leadName}</span>}
+                            </div>
+                            <div style={{textAlign:"right",flexShrink:0}}>
+                              <div style={{fontSize:10,color:"#475569"}}>{dateStr}</div>
+                              <div style={{fontSize:10,color:"#1e3a5f"}}>{timeStr}</div>
+                            </div>
+                          </div>
+                          <div className="audit-meta" style={{marginTop:4}}>
+                            <span style={{color:"#60a5fa"}}>{log.user_name}</span>
+                            {d.from&&d.to&&<span style={{color:"#334155"}}> · {d.from} → {d.to}</span>}
+                            {d.count&&<span style={{color:"#334155"}}> · {d.count} leads</span>}
+                            {d.role&&<span style={{color:"#334155"}}> · role: {d.role}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
