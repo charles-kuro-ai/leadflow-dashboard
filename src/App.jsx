@@ -638,7 +638,7 @@ function Dashboard({ session, profile, onLogout }) {
       {/* Logo */}
       <div style={{padding:"0 20px 28px",borderBottom:"1px solid rgba(201,168,76,0.1)"}}>
         <div style={{fontWeight:800,fontSize:22,color:"#e2e8f0",letterSpacing:"-0.03em"}}>Lead<span style={{color:"#c9a84c"}}>Flow</span></div>
-        <div style={{fontSize:10,color:"#334155",marginTop:3,textTransform:"uppercase",letterSpacing:"0.1em"}}>Nigeria CRM</div>
+        <div style={{fontSize:10,color:"#334155",marginTop:3,textTransform:"uppercase",letterSpacing:"0.1em"}}>Lead Intelligence</div>
       </div>
       {/* Nav */}
       <div style={{flex:1,padding:"16px 12px",display:"flex",flexDirection:"column",gap:2}}>
@@ -894,7 +894,7 @@ function Dashboard({ session, profile, onLogout }) {
             <div className="page-header">
               <div>
                 <div className="page-title">Leads</div>
-                <div className="page-sub">{hasActiveFilters?`Showing ${filtered.length} of ${leads.length} leads`:`${leads.length} total leads`}</div>
+                <div className="page-sub" style={{minHeight:"1.4em"}}>{filtered.length} of {leads.length} leads</div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {canSeeAll && stats.pending>0 && (
