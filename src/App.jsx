@@ -285,6 +285,10 @@ function Dashboard({ session, profile, onLogout }) {
   const [followUps, setFollowUps]         = useState([]);
   const [newFollowUp, setNewFollowUp]     = useState({ due_date:"", note:"" });
 
+  // Pipeline / Kanban
+  const [dragLeadId, setDragLeadId]       = useState(null);
+  const [dragOverCol, setDragOverCol]     = useState(null);
+
   const AGING_DAYS = 7;
 
   useEffect(() => { fetchLeads(); fetchTeamMembers(); }, []);
@@ -553,6 +557,22 @@ function Dashboard({ session, profile, onLogout }) {
     setAuditLogs(Array.isArray(data)?data:[]); setAuditLoading(false);
   }
 
+  async function pipelineDrop(targetStatus) {
+    if (!dragLeadId) return;
+    const lead = leads.find(l => l.id === dragLeadId);
+    if (!lead || lead.status === targetStatus) { setDragLeadId(null); setDragOverCol(null); return; }
+    const actualStatus = ((isAgent || isBM) && targetStatus === "Converted") ? "Pending Approval" : targetStatus;
+    const old = lead.status;
+    const { error } = await supabase.from("leads").update({ status: actualStatus }).eq("id", dragLeadId);
+    if (!error) {
+      await logAudit(`Marked as ${actualStatus}`, "lead", dragLeadId, { from: old, to: actualStatus });
+      await logHistory(dragLeadId, "status", old, actualStatus);
+      showToast(actualStatus === "Pending Approval" ? "Sent for manager approval" : `Moved to ${actualStatus}`, "success");
+      fetchLeads();
+    }
+    setDragLeadId(null); setDragOverCol(null);
+  }
+
   function showToast(msg, type="info") {
     setToast(msg); setToastType(type);
     setTimeout(()=>setToast(""),3500);
@@ -614,12 +634,15 @@ function Dashboard({ session, profile, onLogout }) {
   const today = new Date().toISOString().split("T")[0];
 
   const NAV = [
-    { id:"leads",   icon:"◈", label:"Leads" },
-    { id:"scrape",  icon:"⊕", label:"Find Leads" },
+    { id:"leads",     icon:"◈", label:"Leads" },
+    { id:"pipeline",  icon:"⬛", label:"Pipeline" },
+    { id:"analytics", icon:"◑", label:"Analytics" },
+    { id:"scrape",    icon:"⊕", label:"Find Leads" },
     ...(canSeeAll ? [{ id:"approvals", icon:"⏳", label:"Approvals", badge:stats.pending }] : []),
     ...(canSeeAll ? [{ id:"team",      icon:"◉", label:"Team" }] : []),
     ...(canSeeAll ? [{ id:"leaderboard",icon:"▲", label:"Leaderboard" }] : []),
     ...(canSeeAll ? [{ id:"targets",   icon:"◎", label:"Targets" }] : []),
+    ...(isAdmin    ? [{ id:"dedup",      icon:"⊗", label:"Deduplication" }] : []),
     ...(canSeeAll ? [{ id:"audit",     icon:"≡", label:"Audit Log" }] : []),
   ];
 
@@ -890,6 +913,338 @@ function Dashboard({ session, profile, onLogout }) {
           </div>
 
           <div className="page-inner">
+
+            {/* ── ANALYTICS PAGE ───────────────────────────────── */}
+            {activePage === "analytics" && (() => {
+              // ── derived data ──────────────────────────────────────
+              const statusList = ["New","Assigned","Contacted","In Progress","Pending Approval","Converted"];
+              const byStatus   = statusList.map(s=>({ label:s, count:leads.filter(l=>l.status===s).length }));
+
+              const tierList   = ["SME","Corporate","Mass Market"];
+              const byTier     = tierList.map(t=>({ label:t, count:leads.filter(l=>l.tier===t).length }));
+
+              const btypeCounts = {};
+              leads.forEach(l=>{ if(l.business_type){ btypeCounts[l.business_type]=(btypeCounts[l.business_type]||0)+1; } });
+              const byBtype = Object.entries(btypeCounts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([label,count])=>({label,count}));
+
+              const agentCounts = {};
+              leads.forEach(l=>{ if(l.agent){ agentCounts[l.agent]=(agentCounts[l.agent]||0)+1; } });
+              const byAgent = Object.entries(agentCounts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([label,count])=>({label,count}));
+
+              // leads by month (last 6)
+              const monthMap = {};
+              leads.forEach(l=>{
+                if(!l.created_at) return;
+                const m = l.created_at.slice(0,7);
+                monthMap[m]=(monthMap[m]||0)+1;
+              });
+              const months = [];
+              for(let i=5;i>=0;i--){
+                const d=new Date(); d.setMonth(d.getMonth()-i);
+                const key=d.toISOString().slice(0,7);
+                months.push({ label:key.slice(5)+" "+key.slice(0,4), count:monthMap[key]||0 });
+              }
+
+              const totalLeads = leads.length;
+              const convertedLeads = leads.filter(l=>l.status==="Converted").length;
+              const convRate = totalLeads>0 ? ((convertedLeads/totalLeads)*100).toFixed(1) : 0;
+              const avgScore = totalLeads>0 ? (leads.reduce((s,l)=>s+(l.score||0),0)/totalLeads).toFixed(0) : 0;
+
+              // ── small inline bar chart ───────────────────────────
+              function BarChart({ data, color="#c9a84c", height=120 }) {
+                const max = Math.max(...data.map(d=>d.count), 1);
+                const W = 100/data.length;
+                return (
+                  <div style={{overflowX:"auto"}}>
+                    <div style={{display:"flex",alignItems:"flex-end",gap:4,height,minWidth:data.length*44}}>
+                      {data.map((d,i)=>(
+                        <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:36}}>
+                          <span style={{fontSize:10,color:"#64748b",fontWeight:600}}>{d.count}</span>
+                          <div style={{width:"100%",height:Math.max((d.count/max)*(height-28),4),background:color,borderRadius:"4px 4px 0 0",opacity:0.85,transition:"height 0.3s"}}/>
+                          <span style={{fontSize:9,color:"#475569",textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:40}}>{d.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              function KpiCard({ label, value, sub, accent }) {
+                return (
+                  <div style={{background:"#0d1b3e",border:"1px solid rgba(201,168,76,0.1)",borderRadius:12,padding:"18px 20px",flex:"1 1 140px",minWidth:130}}>
+                    <div style={{fontSize:28,fontWeight:800,color:accent||"#e2e8f0",letterSpacing:"-0.03em"}}>{value}</div>
+                    <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{label}</div>
+                    {sub&&<div style={{fontSize:11,color:"#334155",marginTop:4}}>{sub}</div>}
+                  </div>
+                );
+              }
+
+              function ChartCard({ title, children }) {
+                return (
+                  <div style={{background:"#0d1b3e",border:"1px solid rgba(201,168,76,0.08)",borderRadius:12,padding:"18px 20px"}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>{title}</div>
+                    {children}
+                  </div>
+                );
+              }
+
+              return (
+                <div>
+                  <div className="page-header">
+                    <div>
+                      <div className="page-title">Analytics</div>
+                      <div className="page-sub">{totalLeads} leads total</div>
+                    </div>
+                    <button className="btn" onClick={fetchLeads}>↻ Refresh</button>
+                  </div>
+
+                  {/* KPI row */}
+                  <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>
+                    <KpiCard label="Total Leads"      value={totalLeads}       accent="#e2e8f0" />
+                    <KpiCard label="Converted"        value={convertedLeads}   accent="#c9a84c" sub={`${convRate}% conversion rate`} />
+                    <KpiCard label="Avg Lead Score"   value={avgScore}         accent="#60a5fa" sub="out of 100" />
+                    <KpiCard label="Pending Approval" value={stats.pending}    accent={stats.pending>0?"#f97316":"#e2e8f0"} />
+                    <KpiCard label="Aging 7d+"        value={agingCount}       accent={agingCount>0?"#ef4444":"#e2e8f0"} />
+                  </div>
+
+                  {/* Charts row 1 */}
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
+                    <ChartCard title="Leads by Month (last 6)">
+                      <BarChart data={months} color="#c9a84c" height={130} />
+                    </ChartCard>
+                    <ChartCard title="Leads by Status">
+                      <BarChart data={byStatus} color="#60a5fa" height={130} />
+                    </ChartCard>
+                  </div>
+
+                  {/* Charts row 2 */}
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
+                    <ChartCard title="Top Business Types">
+                      {byBtype.length ? <BarChart data={byBtype} color="#a78bfa" height={130} /> : <div style={{color:"#334155",fontSize:12}}>No data yet</div>}
+                    </ChartCard>
+                    <ChartCard title="Leads by Tier">
+                      <BarChart data={byTier} color="#34d399" height={130} />
+                    </ChartCard>
+                  </div>
+
+                  {/* Agent performance table */}
+                  {canSeeAll && byAgent.length>0 && (
+                    <ChartCard title="Agent Performance">
+                      <div style={{overflowX:"auto"}}>
+                        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                          <thead>
+                            <tr style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+                              {["Agent","Assigned","Contacted","Converted","Conv %"].map(h=>(
+                                <th key={h} style={{textAlign:"left",padding:"6px 10px",color:"#475569",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em"}}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {teamMembers.filter(m=>m.role==="agent").map(m=>{
+                              const aLeads   = leads.filter(l=>l.agent===m.name);
+                              const aConv    = aLeads.filter(l=>l.status==="Converted").length;
+                              const aCont    = aLeads.filter(l=>l.status==="Contacted").length;
+                              const convPct  = aLeads.length>0 ? ((aConv/aLeads.length)*100).toFixed(0) : 0;
+                              return (
+                                <tr key={m.id} style={{borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                                  <td style={{padding:"9px 10px",color:"#e2e8f0",fontWeight:500}}>{m.name}</td>
+                                  <td style={{padding:"9px 10px",color:"#94a3b8"}}>{aLeads.length}</td>
+                                  <td style={{padding:"9px 10px",color:"#60a5fa"}}>{aCont}</td>
+                                  <td style={{padding:"9px 10px",color:"#c9a84c",fontWeight:600}}>{aConv}</td>
+                                  <td style={{padding:"9px 10px"}}>
+                                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                      <div style={{flex:1,height:5,background:"rgba(255,255,255,0.05)",borderRadius:3,maxWidth:80}}>
+                                        <div style={{height:"100%",width:`${convPct}%`,background:"#c9a84c",borderRadius:3}}/>
+                                      </div>
+                                      <span style={{fontSize:11,color:"#64748b",minWidth:28}}>{convPct}%</span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </ChartCard>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── DEDUPLICATION PAGE ───────────────────────────── */}
+            {activePage === "dedup" && isAdmin && (() => {
+              // Group leads by normalised name+location key
+              const groups = {};
+              leads.forEach(l => {
+                const key = (l.name||"").trim().toLowerCase() + "||" + (l.location||"").trim().toLowerCase();
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(l);
+              });
+              const dupGroups = Object.values(groups).filter(g => g.length > 1)
+                .sort((a,b) => b.length - a.length);
+
+              async function deleteDuplicates(group) {
+                // Keep the oldest (first created), delete the rest
+                const sorted = [...group].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                const toDelete = sorted.slice(1);
+                for (const l of toDelete) {
+                  await supabase.from("leads").delete().eq("id", l.id);
+                  await logAudit("Deleted duplicate lead", "lead", l.id, { name: l.name, location: l.location });
+                }
+                showToast(`Removed ${toDelete.length} duplicate${toDelete.length>1?"s":""}`, "success");
+                fetchLeads();
+              }
+
+              async function deleteAllDuplicates() {
+                let total = 0;
+                for (const group of dupGroups) {
+                  const sorted = [...group].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                  const toDelete = sorted.slice(1);
+                  for (const l of toDelete) {
+                    await supabase.from("leads").delete().eq("id", l.id);
+                    await logAudit("Deleted duplicate lead", "lead", l.id, { name: l.name, location: l.location });
+                    total++;
+                  }
+                }
+                showToast(`Cleaned ${total} duplicate lead${total!==1?"s":""}`, "success");
+                fetchLeads();
+              }
+
+              return (
+                <div>
+                  <div className="page-header">
+                    <div>
+                      <div className="page-title">Deduplication</div>
+                      <div className="page-sub">{dupGroups.length} duplicate group{dupGroups.length!==1?"s":""} found · {dupGroups.reduce((s,g)=>s+g.length-1,0)} leads to remove</div>
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                      <button className="btn" onClick={fetchLeads}>↻ Refresh</button>
+                      {dupGroups.length>0 && (
+                        <button className="btn btn-danger" style={{background:"rgba(239,68,68,0.1)",borderColor:"rgba(239,68,68,0.3)",color:"#ef4444"}} onClick={deleteAllDuplicates}>
+                          ⊗ Remove All Duplicates
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {dupGroups.length === 0 ? (
+                    <div style={{textAlign:"center",padding:"60px 0",color:"#334155",fontSize:14}}>
+                      <div style={{fontSize:32,marginBottom:12}}>✓</div>
+                      <div style={{fontWeight:600,color:"#64748b"}}>No duplicates found</div>
+                      <div style={{fontSize:12,marginTop:4}}>All leads have unique name + location combinations</div>
+                    </div>
+                  ) : (
+                    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                      {dupGroups.map((group, gi) => {
+                        const sorted = [...group].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                        const keep = sorted[0];
+                        return (
+                          <div key={gi} style={{background:"#0d1b3e",border:"1px solid rgba(239,68,68,0.2)",borderRadius:12,padding:"14px 16px"}}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
+                              <div>
+                                <span style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{keep.name}</span>
+                                <span style={{fontSize:12,color:"#475569",marginLeft:8}}>{keep.location}</span>
+                                <span style={{marginLeft:8,fontSize:11,background:"rgba(239,68,68,0.12)",color:"#ef4444",borderRadius:99,padding:"2px 8px",fontWeight:600}}>{group.length} copies</span>
+                              </div>
+                              <button className="btn btn-danger" style={{fontSize:11,padding:"5px 12px",background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.25)",color:"#ef4444"}} onClick={()=>deleteDuplicates(group)}>
+                                Keep oldest · delete {group.length-1}
+                              </button>
+                            </div>
+                            <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                              {sorted.map((l,i) => (
+                                <div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 10px",borderRadius:7,background:i===0?"rgba(52,211,153,0.06)":"rgba(239,68,68,0.04)",border:`1px solid ${i===0?"rgba(52,211,153,0.15)":"rgba(239,68,68,0.1)"}`}}>
+                                  <span style={{fontSize:10,fontWeight:700,color:i===0?"#34d399":"#ef4444",minWidth:36}}>{i===0?"KEEP":"DEL"}</span>
+                                  <span style={{fontSize:12,color:"#94a3b8",flex:1}}>{l.business_type||"—"} · Score {l.score} · {l.status}</span>
+                                  <span style={{fontSize:11,color:"#334155"}}>{l.created_at?.slice(0,10)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── PIPELINE PAGE ─────────────────────────────────── */}
+            {activePage === "pipeline" && (() => {
+              const COLS = [
+                { status:"New",        label:"New",        color:"#475569", bg:"rgba(71,85,105,0.08)" },
+                { status:"Assigned",   label:"Assigned",   color:"#94a3b8", bg:"rgba(148,163,184,0.08)" },
+                { status:"Contacted",  label:"Contacted",  color:"#60a5fa", bg:"rgba(96,165,250,0.08)" },
+                { status:"In Progress",label:"In Progress",color:"#a78bfa", bg:"rgba(167,139,250,0.08)" },
+                { status:"Converted",  label:"Converted",  color:"#c9a84c", bg:"rgba(201,168,76,0.08)" },
+              ];
+              return (
+                <div>
+                  <div className="page-header">
+                    <div>
+                      <div className="page-title">Pipeline</div>
+                      <div className="page-sub">{leads.length} leads · drag cards to change status</div>
+                    </div>
+                    <button className="btn" onClick={fetchLeads}>↻ Refresh</button>
+                  </div>
+                  <div style={{display:"flex",gap:12,overflowX:"auto",paddingBottom:16,minHeight:500}}>
+                    {COLS.map(col => {
+                      const colLeads = leads.filter(l => l.status === col.status);
+                      const isOver   = dragOverCol === col.status;
+                      return (
+                        <div key={col.status}
+                          onDragOver={e=>{ e.preventDefault(); setDragOverCol(col.status); }}
+                          onDragLeave={()=>{ if(dragOverCol===col.status) setDragOverCol(null); }}
+                          onDrop={()=>pipelineDrop(col.status)}
+                          style={{
+                            minWidth:220, flex:"1 1 220px", borderRadius:12,
+                            background: isOver ? col.bg.replace("0.08","0.18") : col.bg,
+                            border:`1.5px solid ${isOver ? col.color : "rgba(255,255,255,0.04)"}`,
+                            transition:"all 0.15s", padding:12,
+                          }}>
+                          {/* Column header */}
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                            <span style={{width:8,height:8,borderRadius:"50%",background:col.color,flexShrink:0,display:"inline-block"}}/>
+                            <span style={{fontWeight:700,fontSize:12,color:col.color,textTransform:"uppercase",letterSpacing:"0.08em"}}>{col.label}</span>
+                            <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.06)",borderRadius:99,padding:"1px 8px",fontSize:11,color:"#64748b",fontWeight:600}}>{colLeads.length}</span>
+                          </div>
+                          {/* Cards */}
+                          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                            {colLeads.map(lead => (
+                              <div key={lead.id}
+                                draggable
+                                onDragStart={()=>setDragLeadId(lead.id)}
+                                onDragEnd={()=>{ setDragLeadId(null); setDragOverCol(null); }}
+                                onClick={()=>openLead(lead)}
+                                style={{
+                                  background:"#0d1b3e", border:"1px solid rgba(201,168,76,0.08)",
+                                  borderRadius:9, padding:"10px 12px", cursor:"grab",
+                                  opacity: dragLeadId===lead.id ? 0.4 : 1,
+                                  transition:"opacity 0.15s",
+                                  boxShadow:"0 1px 4px rgba(0,0,0,0.3)",
+                                }}>
+                                <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0",marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{lead.name}</div>
+                                <div style={{fontSize:11,color:"#475569",marginBottom:6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{lead.business_type||"—"} · {lead.location||"—"}</div>
+                                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                  <span style={{fontSize:10,fontWeight:600,padding:"2px 6px",borderRadius:5,...tierColor(lead.tier)}}>{lead.tier}</span>
+                                  <span style={{fontSize:10,color:"#64748b",marginLeft:"auto"}}>⭐ {lead.score}</span>
+                                </div>
+                                {lead.agent && <div style={{fontSize:10,color:"#334155",marginTop:5}}>👤 {lead.agent}</div>}
+                              </div>
+                            ))}
+                            {colLeads.length===0 && (
+                              <div style={{textAlign:"center",padding:"24px 0",fontSize:11,color:"#1e3a5f"}}>Drop leads here</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── LEADS PAGE ───────────────────────────────────── */}
+            {activePage === "leads" && <div>
             {/* Page header */}
             <div className="page-header">
               <div>
@@ -1085,6 +1440,9 @@ function Dashboard({ session, profile, onLogout }) {
                 </div>
               </div>
             </div>
+            </div>}
+            {/* ── END LEADS PAGE ── */}
+
           </div>
         </div>
       </div>
