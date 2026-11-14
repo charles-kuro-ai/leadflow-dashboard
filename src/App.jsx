@@ -273,7 +273,8 @@ function Dashboard({ session, profile, onLogout }) {
   const isAgent = role === "agent";
   const canSeeAll = isAdmin || isBM;
 
-  const [activePage, setActivePage]   = useState("leads");
+  const defaultPage = isAdmin ? "overview" : "leads";
+  const [activePage, setActivePage]   = useState(defaultPage);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [leads, setLeads]             = useState([]);
@@ -734,26 +735,38 @@ function Dashboard({ session, profile, onLogout }) {
   })).sort((a,b)=>b.converted-a.converted);
   const today = new Date().toISOString().split("T")[0];
 
-  const NAV = [
-    { id:"leads",     icon:"◈", label:"Dashboard" },
-    { id:"pipeline",  icon:"⬛", label:"Pipeline" },
-    { id:"analytics", icon:"◑", label:"Analytics" },
-    { id:"scrape",    icon:"⊕", label:"Find Leads" },
-    ...(canSeeAll ? [{ id:"approvals", icon:"⏳", label:"Approvals", badge:stats.pending }] : []),
-    ...(canSeeAll ? [{ id:"team",      icon:"◉", label:"Team" }] : []),
-    ...(canSeeAll ? [{ id:"leaderboard",icon:"▲", label:"Leaderboard" }] : []),
-    ...(canSeeAll ? [{ id:"targets",   icon:"◎", label:"Targets" }] : []),
-    ...(isAdmin    ? [{ id:"dedup",      icon:"⊗", label:"Deduplication" }] : []),
-    ...(canSeeAll ? [{ id:"audit",     icon:"≡", label:"Audit Log" }] : []),
+  // Role-based nav
+  const NAV = isAgent ? [
+    { id:"leads",      icon:"◈", label:"My Leads" },
+    { id:"pipeline",   icon:"⬛", label:"Pipeline" },
+    { id:"scrape",     icon:"⊕", label:"Find Leads" },
+    { id:"dedup",      icon:"⊗", label:"Deduplication" },
+  ] : isBM ? [
+    { id:"leads",      icon:"◈", label:"Branch Leads" },
+    { id:"analytics",  icon:"◑", label:"Analytics" },
+    { id:"pipeline",   icon:"⬛", label:"Pipeline" },
+    { id:"approvals",  icon:"⏳", label:"Approvals", badge:stats.pending },
+    { id:"leaderboard",icon:"▲", label:"Agents" },
+    { id:"targets",    icon:"◎", label:"Targets" },
+    { id:"audit",      icon:"≡", label:"Audit Log" },
+  ] : [
+    // Super Admin — oversight only
+    { id:"overview",   icon:"◈", label:"Overview" },
+    { id:"analytics",  icon:"◑", label:"Analytics" },
+    { id:"approvals",  icon:"⏳", label:"Approvals", badge:stats.pending },
+    { id:"team",       icon:"◉", label:"Team" },
+    { id:"leaderboard",icon:"▲", label:"Leaderboard" },
+    { id:"targets",    icon:"◎", label:"Targets" },
+    { id:"audit",      icon:"≡", label:"Audit Log" },
   ];
 
   function navClick(id) {
-    if (id==="scrape") { setShowFindLeads(true); setSidebarOpen(false); return; }
-    if (id==="approvals") { setShowApprovals(true); setSidebarOpen(false); return; }
-    if (id==="team") { setShowUserMgr(true); setUserError(""); setUserSuccess(""); setSidebarOpen(false); return; }
-    if (id==="leaderboard") { setShowLeaderboard(true); setSidebarOpen(false); return; }
-    if (id==="targets") { setShowTargets(true); fetchTargets(); setSidebarOpen(false); return; }
-    if (id==="audit") { setShowAuditLog(true); fetchAuditLogs(); setSidebarOpen(false); return; }
+    if (id==="scrape")     { setShowFindLeads(true); setSidebarOpen(false); return; }
+    if (id==="approvals")  { setShowApprovals(true); setSidebarOpen(false); return; }
+    if (id==="team")       { setShowUserMgr(true); setUserError(""); setUserSuccess(""); setSidebarOpen(false); return; }
+    if (id==="leaderboard"){ setActivePage("leaderboard"); setSidebarOpen(false); return; }
+    if (id==="targets")    { setShowTargets(true); fetchTargets(); setSidebarOpen(false); return; }
+    if (id==="audit")      { setShowAuditLog(true); fetchAuditLogs(); setSidebarOpen(false); return; }
     setActivePage(id); setSidebarOpen(false);
   }
 
@@ -1015,6 +1028,42 @@ function Dashboard({ session, profile, onLogout }) {
 
           <div className="page-inner">
 
+            {/* ── LEADERBOARD PAGE (BM and Admin) ─────────────── */}
+            {activePage === "leaderboard" && canSeeAll && (
+              <div>
+                <div className="page-header">
+                  <div>
+                    <div className="page-title">{isBM?"My Agents":"Agent Leaderboard"}</div>
+                    <div className="page-sub">Ranked by conversions</div>
+                  </div>
+                </div>
+                {leaderboard.length===0?(
+                  <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"40px 0"}}>No agents yet</div>
+                ):(
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {leaderboard.map((a,i)=>{
+                      const convRate = a.assigned>0?Math.round(a.converted/a.assigned*100):0;
+                      const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":null;
+                      return (
+                        <div key={a.name} style={{background:"#060d1f",border:`1px solid ${i<3?"rgba(201,168,76,0.2)":"rgba(255,255,255,0.05)"}`,borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                          <div style={{fontSize:16,fontWeight:800,color:i<3?"#c9a84c":"#334155",width:28,flexShrink:0}}>{medal||`#${i+1}`}</div>
+                          <div style={{width:38,height:38,borderRadius:"50%",background:"rgba(201,168,76,0.1)",border:"1px solid rgba(201,168,76,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#c9a84c",flexShrink:0}}>{a.name[0].toUpperCase()}</div>
+                          <div style={{flex:1,minWidth:100}}>
+                            <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{a.name}</div>
+                            <div style={{fontSize:11,color:"#334155",marginTop:2}}>{a.assigned} leads assigned · {convRate}% conversion</div>
+                          </div>
+                          <div style={{display:"flex",gap:16,flexShrink:0}}>
+                            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:"#c9a84c"}}>{a.converted}</div><div style={{fontSize:10,color:"#334155"}}>Converted</div></div>
+                            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:"#64748b"}}>{a.assigned}</div><div style={{fontSize:10,color:"#334155"}}>Assigned</div></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── ANALYTICS PAGE ───────────────────────────────── */}
             {activePage === "analytics" && (() => {
               // ── derived data ──────────────────────────────────────
@@ -1173,7 +1222,7 @@ function Dashboard({ session, profile, onLogout }) {
             })()}
 
             {/* ── DEDUPLICATION PAGE ───────────────────────────── */}
-            {activePage === "dedup" && isAdmin && (() => {
+            {activePage === "dedup" && (isAdmin || isAgent) && (() => {
               // Group leads by normalised name+location key
               const groups = {};
               leads.forEach(l => {
@@ -1347,22 +1396,101 @@ function Dashboard({ session, profile, onLogout }) {
             })()}
 
             {/* ── LEADS PAGE ───────────────────────────────────── */}
+            {/* ADMIN OVERVIEW PAGE */}
+            {activePage === "overview" && isAdmin && (() => {
+              const branches = [...new Set(teamMembers.map(m=>m.branch).filter(Boolean))];
+              const bmList = teamMembers.filter(m=>m.role==="branch_manager");
+              const agentList = teamMembers.filter(m=>m.role==="agent");
+              return (
+                <div>
+                  <div className="page-header">
+                    <div>
+                      <div className="page-title">Overview</div>
+                      <div className="page-sub">{bmList.length} branch manager{bmList.length!==1?"s":""} · {agentList.length} agent{agentList.length!==1?"s":""} · {leads.length} total leads</div>
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                      {stats.pending>0&&<button className="btn" style={{borderColor:"rgba(249,115,22,0.3)",color:"#f97316"}} onClick={()=>setShowApprovals(true)}>⏳ {stats.pending} Pending</button>}
+                      <button className="btn" onClick={()=>setShowUserMgr(true)}>+ Add Member</button>
+                    </div>
+                  </div>
+                  {/* Global KPIs */}
+                  <div className="stat-grid" style={{marginBottom:20}}>
+                    <div className="stat-card"><div className="stat-num">{leads.length}</div><div className="stat-lbl">Total Leads</div></div>
+                    <div className="stat-card"><div className="stat-num stat-accent">{stats.converted}</div><div className="stat-lbl">Converted</div></div>
+                    <div className="stat-card"><div className="stat-num" style={{color:"#f97316"}}>{stats.pending}</div><div className="stat-lbl">Pending Approval</div></div>
+                    <div className="stat-card"><div className="stat-num">{agentList.length}</div><div className="stat-lbl">Active Agents</div></div>
+                    <div className="stat-card"><div className="stat-num">{bmList.length}</div><div className="stat-lbl">Branch Managers</div></div>
+                    <div className="stat-card"><div className="stat-num">{leads.length>0?Math.round(stats.converted/leads.length*100):0}%</div><div className="stat-lbl">Conversion Rate</div></div>
+                  </div>
+                  {/* Per-BM cards */}
+                  <div style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Branch Managers</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24}}>
+                    {bmList.length===0&&<div style={{fontSize:13,color:"#334155",padding:"16px 0"}}>No branch managers yet — add one via Team.</div>}
+                    {bmList.map(bm=>{
+                      const bmAgents = teamMembers.filter(m=>m.role==="agent"&&m.branch===bm.branch);
+                      const bmLeads = leads.filter(l=>l.branch===bm.branch||bmAgents.some(a=>a.name===l.agent));
+                      const bmConverted = bmLeads.filter(l=>l.status==="Converted").length;
+                      const bmPending = bmLeads.filter(l=>l.status==="Pending Approval").length;
+                      return (
+                        <div key={bm.id} style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:"14px 16px"}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                            <div>
+                              <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{bm.name}</div>
+                              <div style={{fontSize:11,color:"#334155",marginTop:2}}>{bm.branch||"No branch"} · {bmAgents.length} agent{bmAgents.length!==1?"s":""}</div>
+                            </div>
+                            <div style={{display:"flex",gap:16}}>
+                              <div style={{textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:"#e2e8f0"}}>{bmLeads.length}</div><div style={{fontSize:10,color:"#334155"}}>Leads</div></div>
+                              <div style={{textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:"#c9a84c"}}>{bmConverted}</div><div style={{fontSize:10,color:"#334155"}}>Converted</div></div>
+                              {bmPending>0&&<div style={{textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:"#f97316"}}>{bmPending}</div><div style={{fontSize:10,color:"#334155"}}>Pending</div></div>}
+                            </div>
+                          </div>
+                          {bmAgents.length>0&&(
+                            <div style={{marginTop:10,display:"flex",flexWrap:"wrap",gap:6}}>
+                              {bmAgents.map(a=>{
+                                const aLeads=leads.filter(l=>l.agent===a.name).length;
+                                const aConv=leads.filter(l=>l.agent===a.name&&l.status==="Converted").length;
+                                return <div key={a.id} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:6,padding:"6px 10px",fontSize:11}}>
+                                  <span style={{color:"#94a3b8",fontWeight:600}}>{a.name}</span>
+                                  <span style={{color:"#334155",marginLeft:6}}>{aLeads} leads · {aConv} converted</span>
+                                </div>;
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Unassigned agents */}
+                  {agentList.filter(a=>!a.branch).length>0&&(
+                    <>
+                      <div style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Unassigned Agents</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>
+                        {agentList.filter(a=>!a.branch).map(a=>(
+                          <div key={a.id} style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.15)",borderRadius:6,padding:"6px 12px",fontSize:12,color:"#ef4444"}}>{a.name} — no branch</div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
             {activePage === "leads" && <div>
             {/* Page header */}
             <div className="page-header">
               <div>
-                <div className="page-title">Leads</div>
+                <div className="page-title">{isAgent?"My Leads":isBM?"Branch Leads":"All Leads"}</div>
                 <div className="page-sub" style={{minHeight:"1.4em"}}>{filtered.length} of {leads.length} leads</div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {canSeeAll && stats.pending>0 && (
+                {isBM && stats.pending>0 && (
                   <button className="btn" style={{borderColor:"rgba(249,115,22,0.3)",color:"#f97316"}} onClick={()=>setShowApprovals(true)}>
                     ⏳ Approvals <span style={{background:"#f97316",color:"#fff",borderRadius:99,padding:"1px 7px",fontSize:10,marginLeft:4}}>{stats.pending}</span>
                   </button>
                 )}
                 <button className="btn" onClick={exportCSV}>↓ Export</button>
                 <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻"}</button>
-                <button className="btn btn-gold" onClick={()=>setShowAddLead(true)}>+ Add Lead</button>
+                {isAgent && <button className="btn btn-gold" onClick={()=>setShowAddLead(true)}>+ Add Lead</button>}
               </div>
             </div>
 
@@ -1642,9 +1770,10 @@ function Dashboard({ session, profile, onLogout }) {
                           <span className="dr-value">{value}</span>
                         </div>
                       ):null)}
-                      {canSeeAll&&(
+                      {/* BM can reassign between agents */}
+                      {isBM&&(
                         <div>
-                          <div style={{fontSize:10,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Assign Agent</div>
+                          <div style={{fontSize:10,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Reassign Agent</div>
                           <select className="form-select" value={assignAgent} onChange={e=>setAssignAgent(e.target.value)}>
                             <option value="">— Select agent —</option>
                             {teamMembers.filter(m=>m.role==="agent").map(m=><option key={m.id}>{m.name}</option>)}
@@ -1652,10 +1781,12 @@ function Dashboard({ session, profile, onLogout }) {
                         </div>
                       )}
                       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                        {canSeeAll&&<button className="btn btn-gold" disabled={assigningAgent} onClick={assignLead} style={{flex:1,justifyContent:"center"}}>{assigningAgent?"…":"Assign"}</button>}
-                        <button className="btn" disabled={contactingLead} onClick={()=>markStatus("Contacted")} style={{flex:1,justifyContent:"center"}}>{contactingLead?"…":"Contacted"}</button>
-                        <button className="btn btn-success" disabled={convertingLead} onClick={()=>markStatus("Converted")} style={{flex:1,justifyContent:"center"}}>{convertingLead?"…":"Convert"}</button>
+                        {isBM&&<button className="btn btn-gold" disabled={assigningAgent} onClick={assignLead} style={{flex:1,justifyContent:"center"}}>{assigningAgent?"…":"Reassign"}</button>}
+                        {/* Agents work their own leads */}
+                        {isAgent&&<button className="btn" disabled={contactingLead} onClick={()=>markStatus("Contacted")} style={{flex:1,justifyContent:"center"}}>{contactingLead?"…":"Contacted"}</button>}
+                        {isAgent&&<button className="btn btn-success" disabled={convertingLead} onClick={()=>markStatus("Converted")} style={{flex:1,justifyContent:"center"}}>{convertingLead?"…":"Request Convert"}</button>}
                       </div>
+                      {/* BM and Admin can approve/reject */}
                       {canSeeAll&&selected.status==="Pending Approval"&&(
                         <div style={{display:"flex",gap:7}}>
                           <button className="btn btn-success" onClick={()=>approveConversion(selected.id)} style={{flex:1,justifyContent:"center"}}>✓ Approve</button>
