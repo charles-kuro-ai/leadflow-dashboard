@@ -275,6 +275,7 @@ function Dashboard({ session, profile, onLogout }) {
 
   const defaultPage = isAdmin ? "overview" : "leads";
   const [activePage, setActivePage]   = useState(defaultPage);
+  const [overviewDrill, setOverviewDrill] = useState(null); // { title, leads[] }
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [leads, setLeads]             = useState([]);
@@ -1413,13 +1414,13 @@ function Dashboard({ session, profile, onLogout }) {
                       <button className="btn" onClick={()=>setShowUserMgr(true)}>+ Add Member</button>
                     </div>
                   </div>
-                  {/* Global KPIs */}
+                  {/* Global KPIs — clickable drilldown */}
                   <div className="stat-grid" style={{marginBottom:20}}>
-                    <div className="stat-card"><div className="stat-num">{leads.length}</div><div className="stat-lbl">Total Leads</div></div>
-                    <div className="stat-card"><div className="stat-num stat-accent">{stats.converted}</div><div className="stat-lbl">Converted</div></div>
-                    <div className="stat-card"><div className="stat-num" style={{color:"#f97316"}}>{stats.pending}</div><div className="stat-lbl">Pending Approval</div></div>
-                    <div className="stat-card"><div className="stat-num">{agentList.length}</div><div className="stat-lbl">Active Agents</div></div>
-                    <div className="stat-card"><div className="stat-num">{bmList.length}</div><div className="stat-lbl">Branch Managers</div></div>
+                    <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"All Leads",leads})}><div className="stat-num">{leads.length}</div><div className="stat-lbl">Total Leads</div></div>
+                    <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Converted Leads",leads:leads.filter(l=>l.status==="Converted")})}><div className="stat-num stat-accent">{stats.converted}</div><div className="stat-lbl">Converted</div></div>
+                    <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Pending Approval",leads:leads.filter(l=>l.status==="Pending Approval")})}><div className="stat-num" style={{color:"#f97316"}}>{stats.pending}</div><div className="stat-lbl">Pending Approval</div></div>
+                    <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Active Agents",leads:null,members:agentList})}><div className="stat-num">{agentList.length}</div><div className="stat-lbl">Active Agents</div></div>
+                    <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Branch Managers",leads:null,members:bmList})}><div className="stat-num">{bmList.length}</div><div className="stat-lbl">Branch Managers</div></div>
                     <div className="stat-card"><div className="stat-num">{leads.length>0?Math.round(stats.converted/leads.length*100):0}%</div><div className="stat-lbl">Conversion Rate</div></div>
                   </div>
                   {/* Per-BM cards */}
@@ -1439,9 +1440,9 @@ function Dashboard({ session, profile, onLogout }) {
                               <div style={{fontSize:11,color:"#334155",marginTop:2}}>{bm.branch||"No branch"} · {bmAgents.length} agent{bmAgents.length!==1?"s":""}</div>
                             </div>
                             <div style={{display:"flex",gap:16}}>
-                              <div style={{textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:"#e2e8f0"}}>{bmLeads.length}</div><div style={{fontSize:10,color:"#334155"}}>Leads</div></div>
-                              <div style={{textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:"#c9a84c"}}>{bmConverted}</div><div style={{fontSize:10,color:"#334155"}}>Converted</div></div>
-                              {bmPending>0&&<div style={{textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:"#f97316"}}>{bmPending}</div><div style={{fontSize:10,color:"#334155"}}>Pending</div></div>}
+                              <div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — All Leads`,leads:bmLeads})}><div style={{fontSize:18,fontWeight:700,color:"#e2e8f0"}}>{bmLeads.length}</div><div style={{fontSize:10,color:"#334155"}}>Leads</div></div>
+                              <div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — Converted`,leads:bmLeads.filter(l=>l.status==="Converted")})}><div style={{fontSize:18,fontWeight:700,color:"#c9a84c"}}>{bmConverted}</div><div style={{fontSize:10,color:"#334155"}}>Converted</div></div>
+                              {bmPending>0&&<div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — Pending`,leads:bmLeads.filter(l=>l.status==="Pending Approval")})}><div style={{fontSize:18,fontWeight:700,color:"#f97316"}}>{bmPending}</div><div style={{fontSize:10,color:"#334155"}}>Pending</div></div>}
                             </div>
                           </div>
                           {bmAgents.length>0&&(
@@ -1856,6 +1857,61 @@ function Dashboard({ session, profile, onLogout }) {
             </div>
           </div>
         </>
+      )}
+
+      {/* OVERVIEW DRILLDOWN MODAL */}
+      {overviewDrill&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setOverviewDrill(null)}>
+          <div className="modal" style={{maxWidth:680}} onClick={e=>e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title">{overviewDrill.title}</span>
+              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setOverviewDrill(null)}>✕</button>
+            </div>
+            <div className="modal-body" style={{maxHeight:"70vh",overflowY:"auto"}}>
+              {overviewDrill.members ? (
+                // Members drilldown
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {overviewDrill.members.length===0&&<div style={{color:"#334155",fontSize:13,textAlign:"center",padding:"24px 0"}}>None yet</div>}
+                  {overviewDrill.members.map(m=>{
+                    const rc=roleColor(m.role);
+                    const mLeads=leads.filter(l=>l.agent===m.name||l.branch===m.branch).length;
+                    const mConverted=leads.filter(l=>(l.agent===m.name||l.branch===m.branch)&&l.status==="Converted").length;
+                    return (
+                      <div key={m.id} style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:9,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>{m.name}</div>
+                          <div style={{fontSize:11,color:"#334155",marginTop:2}}>{m.branch||"No branch"} · Joined {new Date(m.created_at).toLocaleDateString()}</div>
+                        </div>
+                        <span className="role-badge" style={{background:rc.bg,color:rc.color}}>{m.role.replace("_"," ")}</span>
+                        <div style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:700,color:"#e2e8f0"}}>{mLeads}</div><div style={{fontSize:10,color:"#334155"}}>Leads</div></div>
+                        <div style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:700,color:"#c9a84c"}}>{mConverted}</div><div style={{fontSize:10,color:"#334155"}}>Converted</div></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                // Leads drilldown
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {(overviewDrill.leads||[]).length===0&&<div style={{color:"#334155",fontSize:13,textAlign:"center",padding:"24px 0"}}>No leads</div>}
+                  {(overviewDrill.leads||[]).map(l=>(
+                    <div key={l.id} style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:8,padding:"10px 14px",cursor:"pointer"}} onClick={()=>{openLead(l);setOverviewDrill(null);}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
+                        <div>
+                          <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>{l.name}</div>
+                          <div style={{fontSize:11,color:"#334155",marginTop:2}}>{l.location} · {l.business_type||"—"}</div>
+                        </div>
+                        <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+                          {l.agent&&<span style={{fontSize:11,color:"#60a5fa"}}>{l.agent}</span>}
+                          <span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:4,background:`${statusColor(l.status)}18`,color:statusColor(l.status),border:`1px solid ${statusColor(l.status)}30`}}>{l.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* FIND LEADS MODAL */}
