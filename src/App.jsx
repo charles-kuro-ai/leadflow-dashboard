@@ -106,10 +106,14 @@ const EMPTY_LEAD = { name:"", phone:"", location:"", tier:"SME", score:50, sourc
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
 function LoginScreen() {
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [error, setError]         = useState("");
+  const [mode, setMode]           = useState("login"); // "login" | "forgot"
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -118,45 +122,94 @@ function LoginScreen() {
     if (error) { setError("Invalid email or password."); setLoading(false); }
   }
 
+  async function handleGoogle() {
+    setGoogleLoading(true); setError("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) { setError("Google sign-in failed. Try again."); setGoogleLoading(false); }
+  }
+
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    if (!email) return setError("Enter your email address first.");
+    setResetLoading(true); setError("");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+    setResetLoading(false);
+    if (error) setError(error.message);
+    else setResetSent(true);
+  }
+
+  const inputStyle = {background:"#0d1b3e",border:"1px solid #1e3a5f",borderRadius:8,color:"#e2e8f0",fontSize:14,fontFamily:"inherit",padding:"12px 14px",outline:"none",width:"100%"};
+  const labelStyle = {fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600};
+
   return (
     <div style={{minHeight:"100vh",background:"#060d1f",display:"flex",fontFamily:"'DM Sans',sans-serif"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      {/* Left panel */}
-      <div style={{display:"none",flex:1,background:"linear-gradient(135deg,#0d1b3e 0%,#0a1628 100%)",alignItems:"center",justifyContent:"center",padding:48,flexDirection:"column",gap:32,borderRight:"1px solid rgba(201,168,76,0.1)"}} className="login-left">
-        <div>
-          <div style={{fontWeight:800,fontSize:36,color:"#e2e8f0",letterSpacing:"-0.03em",marginBottom:8}}>Lead<span style={{color:"#c9a84c"}}>Flow</span></div>
-          <div style={{fontSize:15,color:"#64748b",lineHeight:1.7,maxWidth:320}}>Enterprise lead management for Nigerian banking. Find, track, and convert business prospects at scale.</div>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:16,width:"100%",maxWidth:320}}>
-          {["Scrape thousands of leads from Google Maps","Role-based access for your whole team","Track every lead from prospect to conversion"].map(f=>(
-            <div key={f} style={{display:"flex",alignItems:"center",gap:10,fontSize:13,color:"#94a3b8"}}>
-              <div style={{width:6,height:6,borderRadius:"50%",background:"#c9a84c",flexShrink:0}}/>
-              {f}
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* Right panel */}
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
         <div style={{width:"100%",maxWidth:380}}>
-          <div style={{marginBottom:36}}>
+          <div style={{marginBottom:32}}>
             <div style={{fontWeight:800,fontSize:28,color:"#e2e8f0",letterSpacing:"-0.03em",marginBottom:6}}>Lead<span style={{color:"#c9a84c"}}>Flow</span></div>
-            <div style={{fontSize:14,color:"#475569"}}>Sign in to your workspace</div>
+            <div style={{fontSize:14,color:"#475569"}}>{mode==="forgot"?"Reset your password":"Sign in to your workspace"}</div>
           </div>
-          <form onSubmit={handleLogin} style={{display:"flex",flexDirection:"column",gap:14}}>
-            <div style={{display:"flex",flexDirection:"column",gap:5}}>
-              <label style={{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600}}>Email address</label>
-              <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@bank.com" style={{background:"#0d1b3e",border:"1px solid #1e3a5f",borderRadius:8,color:"#e2e8f0",fontSize:14,fontFamily:"inherit",padding:"12px 14px",outline:"none",width:"100%"}} />
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:5}}>
-              <label style={{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600}}>Password</label>
-              <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={{background:"#0d1b3e",border:"1px solid #1e3a5f",borderRadius:8,color:"#e2e8f0",fontSize:14,fontFamily:"inherit",padding:"12px 14px",outline:"none",width:"100%"}} />
-            </div>
-            {error && <div style={{fontSize:12,color:"#ef4444",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:7,padding:"9px 12px"}}>{error}</div>}
-            <button type="submit" disabled={loading} style={{marginTop:4,background:"#c9a84c",border:"none",borderRadius:8,color:"#060d1f",fontWeight:700,fontSize:14,fontFamily:"inherit",padding:"13px",cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:"0.01em"}}>
-              {loading ? "Signing in…" : "Sign in"}
-            </button>
-          </form>
+
+          {mode==="forgot" ? (
+            resetSent ? (
+              <div style={{textAlign:"center",padding:"24px 0"}}>
+                <div style={{fontSize:32,marginBottom:12}}>📧</div>
+                <div style={{fontWeight:600,color:"#e2e8f0",marginBottom:8}}>Check your email</div>
+                <div style={{fontSize:13,color:"#64748b",marginBottom:20}}>We sent a password reset link to <strong style={{color:"#c9a84c"}}>{email}</strong></div>
+                <button style={{background:"none",border:"none",color:"#c9a84c",fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("login");setResetSent(false);}}>← Back to sign in</button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  <label style={labelStyle}>Email address</label>
+                  <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@bank.com" style={inputStyle} />
+                </div>
+                {error && <div style={{fontSize:12,color:"#ef4444",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:7,padding:"9px 12px"}}>{error}</div>}
+                <button type="submit" disabled={resetLoading} style={{background:"#c9a84c",border:"none",borderRadius:8,color:"#060d1f",fontWeight:700,fontSize:14,fontFamily:"inherit",padding:"13px",cursor:resetLoading?"not-allowed":"pointer",opacity:resetLoading?0.7:1}}>
+                  {resetLoading?"Sending…":"Send Reset Link"}
+                </button>
+                <button type="button" style={{background:"none",border:"none",color:"#64748b",fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("login");setError("");}}>← Back to sign in</button>
+              </form>
+            )
+          ) : (
+            <>
+              {/* Google button */}
+              <button onClick={handleGoogle} disabled={googleLoading} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#fff",border:"none",borderRadius:8,color:"#1a1a1a",fontWeight:600,fontSize:14,fontFamily:"inherit",padding:"12px",cursor:googleLoading?"not-allowed":"pointer",opacity:googleLoading?0.7:1,marginBottom:16}}>
+                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+                {googleLoading ? "Connecting…" : "Continue with Google"}
+              </button>
+
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+                <div style={{flex:1,height:1,background:"#1e3a5f"}}/>
+                <span style={{fontSize:11,color:"#334155"}}>or</span>
+                <div style={{flex:1,height:1,background:"#1e3a5f"}}/>
+              </div>
+
+              <form onSubmit={handleLogin} style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  <label style={labelStyle}>Email address</label>
+                  <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@bank.com" style={inputStyle} />
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <label style={labelStyle}>Password</label>
+                    <button type="button" style={{background:"none",border:"none",color:"#c9a84c",fontSize:11,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("forgot");setError("");}}>Forgot password?</button>
+                  </div>
+                  <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={inputStyle} />
+                </div>
+                {error && <div style={{fontSize:12,color:"#ef4444",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:7,padding:"9px 12px"}}>{error}</div>}
+                <button type="submit" disabled={loading} style={{marginTop:4,background:"#c9a84c",border:"none",borderRadius:8,color:"#060d1f",fontWeight:700,fontSize:14,fontFamily:"inherit",padding:"13px",cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1}}>
+                  {loading ? "Signing in…" : "Sign in"}
+                </button>
+              </form>
+            </>
+          )}
           <div style={{textAlign:"center",marginTop:28,fontSize:12,color:"#1e3a5f"}}>LeadFlow Nigeria · Secure access only</div>
         </div>
       </div>
@@ -237,6 +290,15 @@ function Dashboard({ session, profile, onLogout }) {
 
   const [selectedIds, setSelectedIds]       = useState(new Set());
   const [confirmDelete, setConfirmDelete]   = useState(false);
+  const [bulkDeleting, setBulkDeleting]     = useState(false);
+  const [bulkAssigning, setBulkAssigning]   = useState(false);
+  const [deduping, setDeduping]             = useState(false);
+  const [refreshing, setRefreshing]         = useState(false);
+  const [addingLead, setAddingLead]         = useState(false);
+  const [assigningAgent, setAssigningAgent] = useState(false);
+  const [convertingLead, setConvertingLead] = useState(false);
+  const [contactingLead, setContactingLead] = useState(false);
+  const [savingEdit, setSavingEdit]         = useState(false);
 
   const [search, setSearch]               = useState("");
   const [tierFilter, setTierFilter]       = useState("");
@@ -252,6 +314,9 @@ function Dashboard({ session, profile, onLogout }) {
   const [creatingUser, setCreatingUser]   = useState(false);
   const [userError, setUserError]         = useState("");
   const [userSuccess, setUserSuccess]     = useState("");
+  const [editingMember, setEditingMember] = useState(null); // { id, name, branch, role }
+  const [savingMember, setSavingMember]   = useState(false);
+  const [deletingMember, setDeletingMember] = useState(null);
 
   const [showAddLead, setShowAddLead]     = useState(false);
   const [newLead, setNewLead]             = useState(EMPTY_LEAD);
@@ -271,6 +336,7 @@ function Dashboard({ session, profile, onLogout }) {
   const [showApprovals, setShowApprovals] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [auditSearch, setAuditSearch]         = useState("");
+  const [expandedAuditGroup, setExpandedAuditGroup] = useState(null);
   const [showTargets, setShowTargets]         = useState(false);
   const [targets, setTargets]                 = useState([]);
   const [targetsLoading, setTargetsLoading]   = useState(false);
@@ -329,6 +395,11 @@ function Dashboard({ session, profile, onLogout }) {
     if (!error) setLeads(data || []);
     setLoading(false);
   }
+  async function handleRefresh() {
+    setRefreshing(true);
+    await fetchLeads();
+    setRefreshing(false);
+  }
 
   async function fetchTeamMembers() {
     if (!canSeeAll) return;
@@ -374,8 +445,10 @@ function Dashboard({ session, profile, onLogout }) {
 
   async function assignLead() {
     if (!assignAgent || !selected) return showToast("Select a team member first","error");
+    setAssigningAgent(true);
     const oldAgent = selected.agent;
     const { error } = await supabase.from("leads").update({ agent:assignAgent, status:selected.status==="New"?"Assigned":selected.status }).eq("id",selected.id);
+    setAssigningAgent(false);
     if (!error) {
       await logAudit("Assigned lead","lead",selected.id,{from:oldAgent,to:assignAgent});
       await logHistory(selected.id,"agent",oldAgent,assignAgent);
@@ -386,9 +459,12 @@ function Dashboard({ session, profile, onLogout }) {
 
   async function markStatus(newStatus) {
     if (!selected) return;
+    if (newStatus==="Contacted") setContactingLead(true);
+    else setConvertingLead(true);
     const old = selected.status;
     const actualStatus = ((isAgent || isBM) && newStatus === "Converted") ? "Pending Approval" : newStatus;
     const { error } = await supabase.from("leads").update({ status:actualStatus }).eq("id",selected.id);
+    setContactingLead(false); setConvertingLead(false);
     if (!error) {
       await logAudit(`Marked as ${actualStatus}`,"lead",selected.id,{from:old,to:actualStatus});
       await logHistory(selected.id,"status",old,actualStatus);
@@ -444,8 +520,10 @@ function Dashboard({ session, profile, onLogout }) {
   }
 
   async function deleteSelected() {
+    setBulkDeleting(true);
     const ids = [...selectedIds];
     for (const id of ids) { await supabase.from("leads").delete().eq("id",id); await logAudit("Deleted lead","lead",id,{}); }
+    setBulkDeleting(false);
     showToast(`Deleted ${ids.length} lead${ids.length>1?"s":""}`, "info");
     setSelectedIds(new Set()); setConfirmDelete(false); fetchLeads();
   }
@@ -474,6 +552,29 @@ function Dashboard({ session, profile, onLogout }) {
     if (data.error) return setUserError(data.error);
     setUserSuccess(`"${newUser.name}" created successfully`);
     setNewUser({ name:"", email:"", password:"", role:"agent", branch:"" });
+    fetchTeamMembers();
+  }
+
+  async function saveMemberEdit() {
+    if (!editingMember) return;
+    setSavingMember(true);
+    await supabase.from("profiles").update({ name: editingMember.name, branch: editingMember.branch || null }).eq("id", editingMember.id);
+    await logAudit("Edited team member", "user", editingMember.id, { name: editingMember.name, branch: editingMember.branch });
+    setSavingMember(false);
+    setEditingMember(null);
+    showToast("Member updated", "success");
+    fetchTeamMembers();
+  }
+
+  async function deleteMember(member) {
+    setDeletingMember(member.id);
+    // Delete from Supabase Auth via admin endpoint
+    const { data:{ session:s } } = await supabase.auth.getSession();
+    await fetch(`${API_URL}/delete-user`, { method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${s.access_token}`}, body:JSON.stringify({ user_id: member.user_id }) });
+    await supabase.from("profiles").delete().eq("id", member.id);
+    await logAudit("Deleted team member", "user", member.id, { name: member.name, role: member.role });
+    setDeletingMember(null);
+    showToast(`${member.name} removed`, "info");
     fetchTeamMembers();
   }
 
@@ -634,7 +735,7 @@ function Dashboard({ session, profile, onLogout }) {
   const today = new Date().toISOString().split("T")[0];
 
   const NAV = [
-    { id:"leads",     icon:"◈", label:"Leads" },
+    { id:"leads",     icon:"◈", label:"Dashboard" },
     { id:"pipeline",  icon:"⬛", label:"Pipeline" },
     { id:"analytics", icon:"◑", label:"Analytics" },
     { id:"scrape",    icon:"⊕", label:"Find Leads" },
@@ -995,7 +1096,7 @@ function Dashboard({ session, profile, onLogout }) {
                       <div className="page-title">Analytics</div>
                       <div className="page-sub">{totalLeads} leads total</div>
                     </div>
-                    <button className="btn" onClick={fetchLeads}>↻ Refresh</button>
+                    <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻ Refresh"}</button>
                   </div>
 
                   {/* KPI row */}
@@ -1096,6 +1197,7 @@ function Dashboard({ session, profile, onLogout }) {
               }
 
               async function deleteAllDuplicates() {
+                setDeduping(true);
                 let total = 0;
                 for (const group of dupGroups) {
                   const sorted = [...group].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
@@ -1106,6 +1208,7 @@ function Dashboard({ session, profile, onLogout }) {
                     total++;
                   }
                 }
+                setDeduping(false);
                 showToast(`Cleaned ${total} duplicate lead${total!==1?"s":""}`, "success");
                 fetchLeads();
               }
@@ -1118,10 +1221,10 @@ function Dashboard({ session, profile, onLogout }) {
                       <div className="page-sub">{dupGroups.length} duplicate group{dupGroups.length!==1?"s":""} found · {dupGroups.reduce((s,g)=>s+g.length-1,0)} leads to remove</div>
                     </div>
                     <div style={{display:"flex",gap:8}}>
-                      <button className="btn" onClick={fetchLeads}>↻ Refresh</button>
+                      <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻ Refresh"}</button>
                       {dupGroups.length>0 && (
-                        <button className="btn btn-danger" style={{background:"rgba(239,68,68,0.1)",borderColor:"rgba(239,68,68,0.3)",color:"#ef4444"}} onClick={deleteAllDuplicates}>
-                          ⊗ Remove All Duplicates
+                        <button className="btn btn-danger" style={{background:"rgba(239,68,68,0.1)",borderColor:"rgba(239,68,68,0.3)",color:"#ef4444"}} disabled={deduping} onClick={deleteAllDuplicates}>
+                          {deduping?"Removing…":"⊗ Remove All Duplicates"}
                         </button>
                       )}
                     </div>
@@ -1184,7 +1287,7 @@ function Dashboard({ session, profile, onLogout }) {
                       <div className="page-title">Pipeline</div>
                       <div className="page-sub">{leads.length} leads · drag cards to change status</div>
                     </div>
-                    <button className="btn" onClick={fetchLeads}>↻ Refresh</button>
+                    <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻ Refresh"}</button>
                   </div>
                   <div style={{display:"flex",gap:12,overflowX:"auto",paddingBottom:16,minHeight:500}}>
                     {COLS.map(col => {
@@ -1258,7 +1361,7 @@ function Dashboard({ session, profile, onLogout }) {
                   </button>
                 )}
                 <button className="btn" onClick={exportCSV}>↓ Export</button>
-                <button className="btn" onClick={fetchLeads}>↻</button>
+                <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻"}</button>
                 <button className="btn btn-gold" onClick={()=>setShowAddLead(true)}>+ Add Lead</button>
               </div>
             </div>
@@ -1332,19 +1435,21 @@ function Dashboard({ session, profile, onLogout }) {
               <div className="bulk-bar">
                 <span>{selectedIds.size} selected</span>
                 {canSeeAll&&(
-                  <select className="fi" style={{maxWidth:180}} onChange={async e=>{
+                  <select className="fi" style={{maxWidth:180}} disabled={bulkAssigning} onChange={async e=>{
                     const agent=e.target.value; if(!agent) return;
+                    setBulkAssigning(true);
                     const ids=[...selectedIds];
                     for(const id of ids){ await supabase.from("leads").update({agent,status:"Assigned"}).eq("id",id); }
                     await logAudit("Bulk assigned","leads","bulk",{agent,count:ids.length});
+                    setBulkAssigning(false);
                     showToast(`${ids.length} leads assigned to ${agent}`,"success");
                     setSelectedIds(new Set()); fetchLeads(); e.target.value="";
                   }}>
-                    <option value="">Bulk assign to…</option>
+                    <option value="">{bulkAssigning?"Assigning…":"Bulk assign to…"}</option>
                     {teamMembers.filter(m=>m.role==="agent").map(m=><option key={m.id}>{m.name}</option>)}
                   </select>
                 )}
-                <button className="btn btn-danger" onClick={()=>setConfirmDelete(true)}>Delete</button>
+                <button className="btn btn-danger" disabled={bulkDeleting} onClick={()=>setConfirmDelete(true)}>{bulkDeleting?"Deleting…":"Delete"}</button>
                 <button className="btn" onClick={()=>setSelectedIds(new Set())}>Clear</button>
               </div>
             )}
@@ -1547,9 +1652,9 @@ function Dashboard({ session, profile, onLogout }) {
                         </div>
                       )}
                       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                        {canSeeAll&&<button className="btn btn-gold" onClick={assignLead} style={{flex:1,justifyContent:"center"}}>Assign</button>}
-                        <button className="btn" onClick={()=>markStatus("Contacted")} style={{flex:1,justifyContent:"center"}}>Contacted</button>
-                        <button className="btn btn-success" onClick={()=>markStatus("Converted")} style={{flex:1,justifyContent:"center"}}>Convert</button>
+                        {canSeeAll&&<button className="btn btn-gold" disabled={assigningAgent} onClick={assignLead} style={{flex:1,justifyContent:"center"}}>{assigningAgent?"…":"Assign"}</button>}
+                        <button className="btn" disabled={contactingLead} onClick={()=>markStatus("Contacted")} style={{flex:1,justifyContent:"center"}}>{contactingLead?"…":"Contacted"}</button>
+                        <button className="btn btn-success" disabled={convertingLead} onClick={()=>markStatus("Converted")} style={{flex:1,justifyContent:"center"}}>{convertingLead?"…":"Convert"}</button>
                       </div>
                       {canSeeAll&&selected.status==="Pending Approval"&&(
                         <div style={{display:"flex",gap:7}}>
@@ -1624,7 +1729,7 @@ function Dashboard({ session, profile, onLogout }) {
 
       {/* FIND LEADS MODAL */}
       {showFindLeads&&(
-        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&!scrapeJob&&(setShowFindLeads(false),setScrapeDropdown({states:false,types:false,keywords:false}))}>
+        <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget&&!scrapeJob){setShowFindLeads(false);setScrapeDropdown({states:false,types:false,keywords:false});} else if(scrapeDropdown.states||scrapeDropdown.types||scrapeDropdown.keywords){setScrapeDropdown({states:false,types:false,keywords:false});} }}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <span className="modal-title">Find Leads</span>
@@ -1736,7 +1841,7 @@ function Dashboard({ session, profile, onLogout }) {
 
                   <div className="form-group">
                     <label className="form-label">Max Total Leads</label>
-                    <input type="number" min={1} max={500} className="form-input" value={scrapeConfig.max_total} onChange={e=>setScrapeConfig(c=>({...c,max_total:parseInt(e.target.value)||50}))} />
+                    <input type="number" min={1} max={500} className="form-input" value={scrapeConfig.max_total===0?"":scrapeConfig.max_total} onChange={e=>{const v=e.target.value; setScrapeConfig(c=>({...c,max_total:v===""?0:Math.max(1,parseInt(v)||0)}));}} onBlur={e=>{if(!scrapeConfig.max_total||scrapeConfig.max_total<1) setScrapeConfig(c=>({...c,max_total:50}));}} placeholder="e.g. 60" />
                     <span className="form-hint">Scraper stops exactly at this number — not more</span>
                   </div>
                   <div style={{display:"flex",gap:8}}>
@@ -1876,20 +1981,39 @@ function Dashboard({ session, profile, onLogout }) {
                 <button className="btn btn-gold" onClick={createUser} disabled={creatingUser}>{creatingUser?"Creating…":"Create User"}</button>
               </div>
               <div style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em"}}>Team Members ({teamMembers.length})</div>
-              <div style={{overflowX:"auto"}}>
-                <table className="user-table">
-                  <thead><tr><th>Name</th><th>Role</th><th>Branch</th><th>Joined</th></tr></thead>
-                  <tbody>
-                    {teamMembers.map(m=>(
-                      <tr key={m.id}>
-                        <td>{m.name}</td>
-                        <td><span className="role-badge" style={{background:roleColor(m.role).bg,color:roleColor(m.role).color}}>{m.role.replace("_"," ")}</span></td>
-                        <td style={{color:m.branch?"#64748b":"#1e3a5f"}}>{m.branch||"—"}</td>
-                        <td style={{fontSize:11}}>{new Date(m.created_at).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {teamMembers.map(m=>{
+                  const isEditing = editingMember?.id === m.id;
+                  const rc = roleColor(m.role);
+                  return (
+                    <div key={m.id} style={{background:"#060d1f",border:`1px solid ${isEditing?"rgba(201,168,76,0.3)":"rgba(255,255,255,0.05)"}`,borderRadius:9,padding:"12px 14px"}}>
+                      {isEditing ? (
+                        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                            <input className="form-input" style={{flex:1,minWidth:120}} value={editingMember.name} onChange={e=>setEditingMember(p=>({...p,name:e.target.value}))} placeholder="Name" />
+                            <input className="form-input" style={{flex:1,minWidth:120}} value={editingMember.branch||""} onChange={e=>setEditingMember(p=>({...p,branch:e.target.value}))} placeholder="Branch (optional)" />
+                          </div>
+                          <div style={{display:"flex",gap:6}}>
+                            <button className="btn btn-gold" style={{fontSize:11,padding:"5px 12px"}} disabled={savingMember} onClick={saveMemberEdit}>{savingMember?"Saving…":"Save"}</button>
+                            <button className="btn" style={{fontSize:11,padding:"5px 12px"}} onClick={()=>setEditingMember(null)}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>{m.name}</div>
+                            <div style={{fontSize:11,color:"#334155",marginTop:2}}>{m.branch||"No branch"} · {new Date(m.created_at).toLocaleDateString()}</div>
+                          </div>
+                          <span className="role-badge" style={{background:rc.bg,color:rc.color,flexShrink:0}}>{m.role.replace("_"," ")}</span>
+                          <button className="btn" style={{fontSize:11,padding:"4px 10px",flexShrink:0}} onClick={()=>setEditingMember({id:m.id,name:m.name,branch:m.branch||"",role:m.role})}>Edit</button>
+                          {isAdmin && m.role !== "admin" && (
+                            <button className="btn btn-danger" style={{fontSize:11,padding:"4px 10px",flexShrink:0,background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.25)",color:"#ef4444"}} disabled={deletingMember===m.id} onClick={()=>deleteMember(m)}>{deletingMember===m.id?"…":"Delete"}</button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -2066,25 +2190,38 @@ function Dashboard({ session, profile, onLogout }) {
                     ||(log.target_type||"").toLowerCase().includes(q)
                     ||JSON.stringify(log.details||{}).toLowerCase().includes(q);
                 });
+                // Group consecutive same-action entries by same user within 10 min
+                const groups=[];
+                for(const log of filtered){
+                  const last=groups[groups.length-1];
+                  const sameAction=last&&last.action===log.action&&last.user_name===log.user_name;
+                  const within10m=last&&(new Date(last.logs[0].created_at)-new Date(log.created_at))<600000;
+                  if(sameAction&&within10m){ last.logs.push(log); }
+                  else{ groups.push({id:log.id,action:log.action,user_name:log.user_name,logs:[log]}); }
+                }
                 return filtered.length===0?(
                   <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>
                     {auditSearch?"No results for that search":"No activity yet"}
                   </div>
                 ):(
                   <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:480,overflowY:"auto"}}>
-                    {filtered.map(log=>{
+                    {groups.map(group=>{
+                      const log=group.logs[0];
                       const d=log.details||{};
                       const leadName=d.name||d.to||d.email||"";
                       const dt=new Date(log.created_at);
                       const dateStr=dt.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"});
                       const timeStr=dt.toLocaleTimeString("en-NG",{hour:"2-digit",minute:"2-digit"});
                       const actionColor=log.action?.toLowerCase().includes("delet")?"#ef4444":log.action?.toLowerCase().includes("approv")?"#22c55e":log.action?.toLowerCase().includes("reject")?"#f97316":"#c9a84c";
+                      const isGrouped=group.logs.length>1;
+                      const isExpanded=expandedAuditGroup===group.id;
                       return (
-                        <div key={log.id} className="audit-item">
+                        <div key={group.id} className="audit-item" style={{cursor:isGrouped?"pointer":undefined}} onClick={isGrouped?()=>setExpandedAuditGroup(isExpanded?null:group.id):undefined}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",flex:1}}>
                               <span style={{fontSize:11,fontWeight:700,color:actionColor,background:`${actionColor}18`,border:`1px solid ${actionColor}30`,borderRadius:4,padding:"2px 7px",whiteSpace:"nowrap"}}>{log.action}</span>
-                              {leadName&&<span style={{fontSize:11,color:"#cbd5e1",fontWeight:600}}>· {leadName}</span>}
+                              {isGrouped&&<span style={{fontSize:11,fontWeight:700,color:"#c9a84c",background:"rgba(201,168,76,0.12)",border:"1px solid rgba(201,168,76,0.25)",borderRadius:10,padding:"2px 8px"}}>×{group.logs.length} {isExpanded?"▲":"▼"}</span>}
+                              {!isGrouped&&leadName&&<span style={{fontSize:11,color:"#cbd5e1",fontWeight:600}}>· {leadName}</span>}
                             </div>
                             <div style={{textAlign:"right",flexShrink:0}}>
                               <div style={{fontSize:10,color:"#475569"}}>{dateStr}</div>
@@ -2093,10 +2230,27 @@ function Dashboard({ session, profile, onLogout }) {
                           </div>
                           <div className="audit-meta" style={{marginTop:4}}>
                             <span style={{color:"#60a5fa"}}>{log.user_name}</span>
-                            {d.from&&d.to&&<span style={{color:"#334155"}}> · {d.from} → {d.to}</span>}
-                            {d.count&&<span style={{color:"#334155"}}> · {d.count} leads</span>}
-                            {d.role&&<span style={{color:"#334155"}}> · role: {d.role}</span>}
+                            {!isGrouped&&d.from&&d.to&&<span style={{color:"#334155"}}> · {d.from} → {d.to}</span>}
+                            {!isGrouped&&d.count&&<span style={{color:"#334155"}}> · {d.count} leads</span>}
+                            {!isGrouped&&d.role&&<span style={{color:"#334155"}}> · role: {d.role}</span>}
+                            {isGrouped&&<span style={{color:"#334155"}}> · {group.logs.length} actions</span>}
                           </div>
+                          {isGrouped&&isExpanded&&(
+                            <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:4,paddingLeft:8,borderLeft:"2px solid rgba(201,168,76,0.2)"}}>
+                              {group.logs.map((sub,i)=>{
+                                const sd=sub.details||{};
+                                const sName=sd.name||sd.to||sd.email||sub.target_id||"";
+                                const sTime=new Date(sub.created_at).toLocaleTimeString("en-NG",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+                                return(
+                                  <div key={sub.id||i} style={{fontSize:11,color:"#64748b",display:"flex",gap:8}}>
+                                    <span style={{color:"#334155",flexShrink:0}}>{sTime}</span>
+                                    {sName&&<span style={{color:"#94a3b8"}}>{sName}</span>}
+                                    {sd.from&&sd.to&&<span>{sd.from} → {sd.to}</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
