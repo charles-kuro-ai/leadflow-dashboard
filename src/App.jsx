@@ -292,6 +292,8 @@ function Dashboard({ session, profile, onLogout }) {
 
   const [selectedIds, setSelectedIds]       = useState(new Set());
   const [confirmDelete, setConfirmDelete]   = useState(false);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll]       = useState(false);
   const [bulkDeleting, setBulkDeleting]     = useState(false);
   const [bulkAssigning, setBulkAssigning]   = useState(false);
   const [deduping, setDeduping]             = useState(false);
@@ -521,6 +523,20 @@ function Dashboard({ session, profile, onLogout }) {
     setSelected(null); fetchLeads();
   }
 
+  async function deleteAllLeads() {
+    setDeletingAll(true);
+    const { error } = await supabase.from("leads").delete().neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
+    if (!error) {
+      await logAudit("Deleted ALL leads","leads","bulk",{ count: leads.length });
+      setLeads([]); setFiltered([]);
+      showToast("All leads deleted","info");
+    } else {
+      showToast("Error deleting leads","error");
+    }
+    setDeletingAll(false);
+    setConfirmDeleteAll(false);
+  }
+
   async function deleteSelected() {
     setBulkDeleting(true);
     const ids = [...selectedIds];
@@ -553,31 +569,43 @@ function Dashboard({ session, profile, onLogout }) {
     setCreatingUser(false);
     if (data.error) return setUserError(data.error);
     setUserSuccess(`"${newUser.name}" created successfully`);
+    // Add to local state immediately, then sync full list in background
+    setTeamMembers(prev => [{
+      id: data.user_id, user_id: data.user_id,
+      name: newUser.name, role: newUser.role,
+      branch: newUser.branch || null,
+      created_at: new Date().toISOString()
+    }, ...prev]);
     setNewUser({ name:"", email:"", password:"", role:"agent", branch:"" });
-    fetchTeamMembers();
+    fetchTeamMembers(); // background sync to get real profile id
   }
 
   async function saveMemberEdit() {
     if (!editingMember) return;
     setSavingMember(true);
-    await supabase.from("profiles").update({ name: editingMember.name, branch: editingMember.branch || null }).eq("id", editingMember.id);
-    await logAudit("Edited team member", "user", editingMember.id, { name: editingMember.name, branch: editingMember.branch });
+    const { error } = await supabase.from("profiles").update({ name: editingMember.name, branch: editingMember.branch || null }).eq("id", editingMember.id);
+    if (!error) {
+      // Update local state immediately — no wait for re-fetch
+      setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, name: editingMember.name, branch: editingMember.branch || null } : m));
+      await logAudit("Edited team member", "user", editingMember.id, { name: editingMember.name, branch: editingMember.branch });
+      showToast("Member updated", "success");
+    } else {
+      showToast("Error saving — try again", "error");
+    }
     setSavingMember(false);
     setEditingMember(null);
-    showToast("Member updated", "success");
-    fetchTeamMembers();
   }
 
   async function deleteMember(member) {
     setDeletingMember(member.id);
-    // Delete from Supabase Auth via admin endpoint
     const { data:{ session:s } } = await supabase.auth.getSession();
     await fetch(`${API_URL}/delete-user`, { method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${s.access_token}`}, body:JSON.stringify({ user_id: member.user_id }) });
     await supabase.from("profiles").delete().eq("id", member.id);
     await logAudit("Deleted team member", "user", member.id, { name: member.name, role: member.role });
+    // Remove from local state immediately
+    setTeamMembers(prev => prev.filter(m => m.id !== member.id));
     setDeletingMember(null);
     showToast(`${member.name} removed`, "info");
-    fetchTeamMembers();
   }
 
   async function startScrape() {
@@ -1409,9 +1437,10 @@ function Dashboard({ session, profile, onLogout }) {
                       <div className="page-title">Overview</div>
                       <div className="page-sub">{bmList.length} branch manager{bmList.length!==1?"s":""} · {agentList.length} agent{agentList.length!==1?"s":""} · {leads.length} total leads</div>
                     </div>
-                    <div style={{display:"flex",gap:8}}>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       {stats.pending>0&&<button className="btn" style={{borderColor:"rgba(249,115,22,0.3)",color:"#f97316"}} onClick={()=>setShowApprovals(true)}>⏳ {stats.pending} Pending</button>}
                       <button className="btn" onClick={()=>setShowUserMgr(true)}>+ Add Member</button>
+                      {leads.length>0&&<button className="btn btn-danger" style={{background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.3)",color:"#ef4444"}} onClick={()=>setConfirmDeleteAll(true)}>🗑 Delete All Leads</button>}
                     </div>
                   </div>
                   {/* Global KPIs — clickable drilldown */}
@@ -1690,6 +1719,19 @@ function Dashboard({ session, profile, onLogout }) {
             <div style={{display:"flex",gap:8}}>
               <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={()=>setConfirmDelete(false)}>Cancel</button>
               <button className="btn btn-danger" style={{flex:1,justifyContent:"center",background:"rgba(239,68,68,0.1)"}} onClick={deleteSelected}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteAll&&(
+        <div className="confirm-overlay" onClick={e=>e.target===e.currentTarget&&setConfirmDeleteAll(false)}>
+          <div className="confirm-box">
+            <div className="confirm-title" style={{color:"#ef4444"}}>⚠ Delete ALL {leads.length} Leads?</div>
+            <div className="confirm-body">This will permanently delete every lead in the database. This action <strong>cannot be undone</strong>.</div>
+            <div style={{display:"flex",gap:8}}>
+              <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={()=>setConfirmDeleteAll(false)} disabled={deletingAll}>Cancel</button>
+              <button className="btn btn-danger" style={{flex:1,justifyContent:"center",background:"rgba(239,68,68,0.15)",color:"#ef4444",borderColor:"rgba(239,68,68,0.4)"}} onClick={deleteAllLeads} disabled={deletingAll}>{deletingAll?"Deleting…":"Delete All"}</button>
             </div>
           </div>
         </div>
@@ -2124,7 +2166,10 @@ function Dashboard({ session, profile, onLogout }) {
           <div className="modal" style={{maxWidth:580}} onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <span className="modal-title">Team Management</span>
-              <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowUserMgr(false)}>✕</button>
+              <div style={{display:"flex",gap:6}}>
+                <button className="btn" style={{padding:"5px 10px"}} disabled={refreshing} onClick={async()=>{setRefreshing(true);await fetchTeamMembers();setRefreshing(false);}}>{refreshing?"…":"↻"}</button>
+                <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowUserMgr(false)}>✕</button>
+              </div>
             </div>
             <div className="modal-body">
               <div style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:16,display:"flex",flexDirection:"column",gap:12}}>
