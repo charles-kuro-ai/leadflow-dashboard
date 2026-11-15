@@ -292,6 +292,8 @@ function Dashboard({ session, profile, onLogout }) {
 
   const [selectedIds, setSelectedIds]       = useState(new Set());
   const [confirmDelete, setConfirmDelete]   = useState(false);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll]       = useState(false);
   const [bulkDeleting, setBulkDeleting]     = useState(false);
   const [bulkAssigning, setBulkAssigning]   = useState(false);
   const [deduping, setDeduping]             = useState(false);
@@ -519,6 +521,20 @@ function Dashboard({ session, profile, onLogout }) {
     await logAudit("Deleted lead","lead",id,{});
     showToast("Lead deleted","info");
     setSelected(null); fetchLeads();
+  }
+
+  async function deleteAllLeads() {
+    setDeletingAll(true);
+    const { error } = await supabase.from("leads").delete().neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
+    if (!error) {
+      await logAudit("Deleted ALL leads","leads","bulk",{ count: leads.length });
+      setLeads([]); setFiltered([]);
+      showToast("All leads deleted","info");
+    } else {
+      showToast("Error deleting leads","error");
+    }
+    setDeletingAll(false);
+    setConfirmDeleteAll(false);
   }
 
   async function deleteSelected() {
@@ -1421,9 +1437,10 @@ function Dashboard({ session, profile, onLogout }) {
                       <div className="page-title">Overview</div>
                       <div className="page-sub">{bmList.length} branch manager{bmList.length!==1?"s":""} · {agentList.length} agent{agentList.length!==1?"s":""} · {leads.length} total leads</div>
                     </div>
-                    <div style={{display:"flex",gap:8}}>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       {stats.pending>0&&<button className="btn" style={{borderColor:"rgba(249,115,22,0.3)",color:"#f97316"}} onClick={()=>setShowApprovals(true)}>⏳ {stats.pending} Pending</button>}
                       <button className="btn" onClick={()=>setShowUserMgr(true)}>+ Add Member</button>
+                      {leads.length>0&&<button className="btn btn-danger" style={{background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.3)",color:"#ef4444"}} onClick={()=>setConfirmDeleteAll(true)}>🗑 Delete All Leads</button>}
                     </div>
                   </div>
                   {/* Global KPIs — clickable drilldown */}
@@ -1702,6 +1719,19 @@ function Dashboard({ session, profile, onLogout }) {
             <div style={{display:"flex",gap:8}}>
               <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={()=>setConfirmDelete(false)}>Cancel</button>
               <button className="btn btn-danger" style={{flex:1,justifyContent:"center",background:"rgba(239,68,68,0.1)"}} onClick={deleteSelected}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteAll&&(
+        <div className="confirm-overlay" onClick={e=>e.target===e.currentTarget&&setConfirmDeleteAll(false)}>
+          <div className="confirm-box">
+            <div className="confirm-title" style={{color:"#ef4444"}}>⚠ Delete ALL {leads.length} Leads?</div>
+            <div className="confirm-body">This will permanently delete every lead in the database. This action <strong>cannot be undone</strong>.</div>
+            <div style={{display:"flex",gap:8}}>
+              <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={()=>setConfirmDeleteAll(false)} disabled={deletingAll}>Cancel</button>
+              <button className="btn btn-danger" style={{flex:1,justifyContent:"center",background:"rgba(239,68,68,0.15)",color:"#ef4444",borderColor:"rgba(239,68,68,0.4)"}} onClick={deleteAllLeads} disabled={deletingAll}>{deletingAll?"Deleting…":"Delete All"}</button>
             </div>
           </div>
         </div>
