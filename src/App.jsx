@@ -1522,6 +1522,7 @@ function Dashboard({ session, profile, onLogout }) {
                 )}
                 <button className="btn" onClick={exportCSV}>↓ Export</button>
                 <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻"}</button>
+                {isAgent && <button className="btn btn-gold" onClick={()=>setShowAddLead(true)}>+ Add Lead</button>}
 
               </div>
             </div>
