@@ -152,7 +152,7 @@ function LoginScreen() {
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
         <div style={{width:"100%",maxWidth:380}}>
           <div style={{marginBottom:32}}>
-            <div style={{fontWeight:800,fontSize:28,color:"#e2e8f0",letterSpacing:"-0.03em",marginBottom:6}}>Lead<span style={{color:"#c9a84c"}}>Flow</span></div>
+            <div style={{fontWeight:800,fontSize:28,color:"#e2e8f0",letterSpacing:"-0.03em",marginBottom:6}}>Script</div>
             <div style={{fontSize:14,color:"#475569"}}>{mode==="forgot"?"Reset your password":"Sign in to your workspace"}</div>
           </div>
 
@@ -210,7 +210,7 @@ function LoginScreen() {
               </form>
             </>
           )}
-          <div style={{textAlign:"center",marginTop:28,fontSize:12,color:"#1e3a5f"}}>LeadFlow Nigeria · Secure access only</div>
+          <div style={{textAlign:"center",marginTop:28,fontSize:12,color:"#1e3a5f"}}>Script · Secure access only</div>
         </div>
       </div>
     </div>
@@ -252,7 +252,7 @@ export default function App() {
   if (!profile) return (
     <div style={{minHeight:"100vh",background:"#060d1f",display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"DM Sans,sans-serif"}}>
       <div style={{textAlign:"center",maxWidth:360}}>
-        <div style={{fontWeight:800,fontSize:28,color:"#e2e8f0",letterSpacing:"-0.02em",marginBottom:4}}>Lead<span style={{color:"#c9a84c"}}>Flow</span></div>
+        <div style={{fontWeight:800,fontSize:28,color:"#e2e8f0",letterSpacing:"-0.02em",marginBottom:4}}>Script</div>
         <div style={{fontWeight:700,fontSize:18,color:"#e2e8f0",marginBottom:12,marginTop:24}}>Access Pending</div>
         <div style={{fontSize:13,color:"#475569",lineHeight:1.7,marginBottom:20}}>Your account has been created but no role has been assigned. Contact your branch manager or administrator.</div>
         <div style={{fontSize:12,color:"#1e3a5f",marginBottom:20,background:"#0d1b3e",border:"1px solid #1e3a5f",borderRadius:7,padding:"8px 12px"}}>{session.user.email}</div>
@@ -699,7 +699,7 @@ function Dashboard({ session, profile, onLogout }) {
     const rows = [cols.join(","), ...filtered.map(l=>cols.map(c=>`"${(l[c]||"").toString().replace(/"/g,'""')}"`).join(","))];
     const a = document.createElement("a");
     a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(rows.join("\n"));
-    a.download = "leadflow.csv"; a.click();
+    a.download = "script.csv"; a.click();
     showToast("CSV downloaded","success");
     logAudit("Exported CSV","leads","bulk",{count:filtered.length});
   }
@@ -788,7 +788,7 @@ function Dashboard({ session, profile, onLogout }) {
     <div style={{display:"flex",flexDirection:"column",height:"100%",padding:"24px 0"}}>
       {/* Logo */}
       <div style={{padding:"0 20px 28px",borderBottom:"1px solid rgba(201,168,76,0.1)"}}>
-        <div style={{fontWeight:800,fontSize:22,color:"#e2e8f0",letterSpacing:"-0.03em"}}>Lead<span style={{color:"#c9a84c"}}>Flow</span></div>
+        <div style={{fontWeight:800,fontSize:22,color:"#e2e8f0",letterSpacing:"-0.03em"}}>Script</div>
         <div style={{fontSize:10,color:"#334155",marginTop:3,textTransform:"uppercase",letterSpacing:"0.1em"}}>Lead Intelligence</div>
       </div>
       {/* Nav */}
@@ -860,8 +860,6 @@ function Dashboard({ session, profile, onLogout }) {
         .btn-gold:hover { background: #d4b55e; border-color: #d4b55e; color: #060d1f; }
         .btn-danger { border-color: rgba(239,68,68,0.2); color: #ef4444; }
         .btn-danger:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); }
-        .btn-success { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color: #22c55e; }
-        .btn-success:hover { background: rgba(34,197,94,0.15); }
 
         .card { background: #0d1b3e; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; }
 
@@ -1036,7 +1034,7 @@ function Dashboard({ session, profile, onLogout }) {
           {/* Mobile top bar */}
           <div className="mobile-topbar">
             <button onClick={()=>setSidebarOpen(true)} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:18,padding:"4px",fontFamily:"inherit"}}>☰</button>
-            <div style={{fontWeight:800,fontSize:18,color:"#e2e8f0",letterSpacing:"-0.02em"}}>Lead<span style={{color:"#c9a84c"}}>Flow</span></div>
+            <div style={{fontWeight:800,fontSize:18,color:"#e2e8f0",letterSpacing:"-0.02em"}}>Script</div>
             <div style={{width:60}} />
           </div>
 
@@ -1424,6 +1422,7 @@ function Dashboard({ session, profile, onLogout }) {
                     </div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       {stats.pending>0&&<button className="btn" style={{borderColor:"rgba(249,115,22,0.3)",color:"#f97316"}} onClick={()=>setShowApprovals(true)}>⏳ {stats.pending} Pending</button>}
+                      <button className="btn" disabled={refreshing} onClick={async()=>{setRefreshing(true);await fetchLeads();await fetchTeamMembers();setRefreshing(false);}}>{refreshing?"…":"↻"}</button>
                       <button className="btn" onClick={()=>setShowUserMgr(true)}>+ Add Member</button>
                     </div>
                   </div>
@@ -1796,15 +1795,27 @@ function Dashboard({ session, profile, onLogout }) {
                         </div>
                       )}
                       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                        {isBM&&<button className="btn btn-gold" disabled={assigningAgent} onClick={assignLead} style={{flex:1,justifyContent:"center"}}>{assigningAgent?"…":"Reassign"}</button>}
+                        {isBM&&<button className="btn" disabled={assigningAgent} onClick={assignLead} style={{flex:1,justifyContent:"center"}}>{assigningAgent?"…":"Reassign"}</button>}
                         {/* Agents work their own leads */}
-                        {isAgent&&<button className="btn" disabled={contactingLead} onClick={()=>markStatus("Contacted")} style={{flex:1,justifyContent:"center"}}>{contactingLead?"…":"Contacted"}</button>}
-                        {isAgent&&<button className="btn btn-success" disabled={convertingLead} onClick={()=>markStatus("Converted")} style={{flex:1,justifyContent:"center"}}>{convertingLead?"…":"Request Convert"}</button>}
+                        {isAgent&&(
+                          selected.status==="Contacted"||selected.status==="Pending Approval"||selected.status==="Converted"
+                          ? <button className="btn" disabled style={{flex:1,justifyContent:"center",opacity:0.45}}>✓ Contacted</button>
+                          : <button className="btn" disabled={contactingLead} onClick={()=>markStatus("Contacted")} style={{flex:1,justifyContent:"center"}}>{contactingLead?"…":"Mark Contacted"}</button>
+                        )}
+                        {isAgent&&(
+                          selected.status==="Pending Approval"
+                          ? <button className="btn" disabled style={{flex:1,justifyContent:"center",opacity:0.45}}>⏳ Awaiting Approval</button>
+                          : selected.status==="Converted"
+                          ? <button className="btn" disabled style={{flex:1,justifyContent:"center",opacity:0.45}}>✓ Converted</button>
+                          : !selected.agent
+                          ? <button className="btn" disabled style={{flex:1,justifyContent:"center",opacity:0.45}} title="Lead must be assigned first">Request Convert</button>
+                          : <button className="btn" disabled={convertingLead} onClick={()=>markStatus("Converted")} style={{flex:1,justifyContent:"center"}}>{convertingLead?"…":"Request Convert"}</button>
+                        )}
                       </div>
                       {/* BM and Admin can approve/reject */}
                       {canSeeAll&&selected.status==="Pending Approval"&&(
                         <div style={{display:"flex",gap:7}}>
-                          <button className="btn btn-success" onClick={()=>approveConversion(selected.id)} style={{flex:1,justifyContent:"center"}}>✓ Approve</button>
+                          <button className="btn" onClick={()=>approveConversion(selected.id)} style={{flex:1,justifyContent:"center"}}>✓ Approve</button>
                           <button className="btn btn-danger" onClick={()=>rejectConversion(selected.id)} style={{flex:1,justifyContent:"center"}}>✕ Reject</button>
                         </div>
                       )}
@@ -1826,10 +1837,12 @@ function Dashboard({ session, profile, onLogout }) {
                           </div>
                         ))}
                       </div>
-                      <div style={{display:"flex",gap:7}}>
-                        <input className="form-input" placeholder="Add a note…" value={newComment} onChange={e=>setNewComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addComment()} />
-                        <button className="btn btn-gold" onClick={addComment}>Add</button>
-                      </div>
+                      {!isAdmin&&(
+                        <div style={{display:"flex",gap:7}}>
+                          <input className="form-input" placeholder="Add a note…" value={newComment} onChange={e=>setNewComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addComment()} />
+                          <button className="btn btn-gold" onClick={addComment}>Add</button>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -1855,15 +1868,17 @@ function Dashboard({ session, profile, onLogout }) {
                               <div style={{fontSize:12,color:f.done?"#334155":f.due_date<today?"#ef4444":"#94a3b8",fontWeight:600}}>{f.due_date}</div>
                               {f.note&&<div style={{fontSize:11,color:"#334155",marginTop:2}}>{f.note}</div>}
                             </div>
-                            {!f.done&&<button className="btn" style={{padding:"4px 8px",fontSize:11}} onClick={()=>markFollowUpDone(f.id)}>Done</button>}
+                            {!f.done&&!isAdmin&&<button className="btn" style={{padding:"4px 8px",fontSize:11}} onClick={()=>markFollowUpDone(f.id)}>Done</button>}
                           </div>
                         ))}
                       </div>
-                      <div style={{display:"flex",flexDirection:"column",gap:7}}>
-                        <input className="form-input" type="date" value={newFollowUp.due_date} onChange={e=>setNewFollowUp(p=>({...p,due_date:e.target.value}))} />
-                        <input className="form-input" placeholder="Note (optional)" value={newFollowUp.note} onChange={e=>setNewFollowUp(p=>({...p,note:e.target.value}))} />
-                        <button className="btn btn-gold" onClick={addFollowUp}>Set Follow-up</button>
-                      </div>
+                      {!isAdmin&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                          <input className="form-input" type="date" value={newFollowUp.due_date} onChange={e=>setNewFollowUp(p=>({...p,due_date:e.target.value}))} />
+                          <input className="form-input" placeholder="Note (optional)" value={newFollowUp.note} onChange={e=>setNewFollowUp(p=>({...p,note:e.target.value}))} />
+                          <button className="btn btn-gold" onClick={addFollowUp}>Set Follow-up</button>
+                        </div>
+                      )}
                     </>
                   )}
                 </>
