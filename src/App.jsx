@@ -292,8 +292,6 @@ function Dashboard({ session, profile, onLogout }) {
 
   const [selectedIds, setSelectedIds]       = useState(new Set());
   const [confirmDelete, setConfirmDelete]   = useState(false);
-  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
-  const [deletingAll, setDeletingAll]       = useState(false);
   const [bulkDeleting, setBulkDeleting]     = useState(false);
   const [bulkAssigning, setBulkAssigning]   = useState(false);
   const [deduping, setDeduping]             = useState(false);
@@ -374,11 +372,11 @@ function Dashboard({ session, profile, onLogout }) {
     if (from) f = f.filter(l => l.created_at && l.created_at >= from);
     if (to)   f = f.filter(l => l.created_at && l.created_at <= to + "T23:59:59");
     if (statClick === "new")       f = f.filter(l => l.status === "New");
-    if (statClick === "assigned")  f = isAgent ? f.filter(l => l.status === "Assigned" && l.agent === profile.name) : f.filter(l => l.status === "Assigned");
-    if (statClick === "contacted") f = isAgent ? f.filter(l => l.status === "Contacted" && l.agent === profile.name) : f.filter(l => l.status === "Contacted");
-    if (statClick === "converted") f = isAgent ? f.filter(l => l.status === "Converted" && l.agent === profile.name) : f.filter(l => l.status === "Converted");
+    if (statClick === "assigned")  f = f.filter(l => l.status === "Assigned");
+    if (statClick === "contacted") f = f.filter(l => l.status === "Contacted");
+    if (statClick === "converted") f = f.filter(l => l.status === "Converted");
     if (statClick === "pending")   f = f.filter(l => l.status === "Pending Approval");
-    if (statClick === "aging")     f = isAgent ? f.filter(l => isAging(l) && l.agent === profile.name) : f.filter(l => isAging(l));
+    if (statClick === "aging")     f = f.filter(l => isAging(l));
     setFiltered(f);
     setPage(1);
     setSelectedIds(new Set());
@@ -393,7 +391,8 @@ function Dashboard({ session, profile, onLogout }) {
 
   async function fetchLeads() {
     setLoading(true);
-    const query = supabase.from("leads").select("*").order("created_at", { ascending: false });
+    let query = supabase.from("leads").select("*").order("created_at", { ascending: false });
+    if (isAgent) query = query.or(`agent.eq.${profile.name},user_id.eq.${userId}`);
     const { data, error } = await query;
     if (!error) setLeads(data || []);
     setLoading(false);
@@ -522,19 +521,6 @@ function Dashboard({ session, profile, onLogout }) {
     setSelected(null); fetchLeads();
   }
 
-  async function deleteAllLeads() {
-    setDeletingAll(true);
-    const { error } = await supabase.from("leads").delete().neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
-    if (!error) {
-      await logAudit("Deleted ALL leads","leads","bulk",{ count: leads.length });
-      setLeads([]); setFiltered([]);
-      showToast("All leads deleted","info");
-    } else {
-      showToast("Error deleting leads","error");
-    }
-    setDeletingAll(false);
-    setConfirmDeleteAll(false);
-  }
 
   async function deleteSelected() {
     setBulkDeleting(true);
@@ -635,8 +621,8 @@ function Dashboard({ session, profile, onLogout }) {
       const r = await fetch(`${API_URL}/status/${jobId}`);
       const data = await r.json();
       setScrapeStatus(data);
-      if (data.status==="done") { clearInterval(pollRef.current); showToast(`Done! ${data.added} leads added`,"success"); fetchLeads(); }
-      else if (data.status==="cancelled") { clearInterval(pollRef.current); showToast(`Cancelled — ${data.added} leads saved`,"info"); fetchLeads(); }
+      if (data.status==="done") { clearInterval(pollRef.current); showToast(`Done! ${data.added} leads added`,"success"); fetchLeads(); setScrapeJob(null); setScrapeStatus(null); setShowFindLeads(false); setActivePage("leads"); }
+      else if (data.status==="cancelled") { clearInterval(pollRef.current); showToast(`Cancelled — ${data.added} leads saved`,"info"); fetchLeads(); setScrapeJob(null); setScrapeStatus(null); setShowFindLeads(false); }
     } catch {}
   }
 
@@ -745,16 +731,14 @@ function Dashboard({ session, profile, onLogout }) {
 
   const totalPages       = Math.ceil(filtered.length/perPage);
   const pageLeads        = filtered.slice((page-1)*perPage, page*perPage);
-  // For agents: scope stats to their own leads; admins/BMs see all
-  const myLeads = isAgent ? leads.filter(l => l.agent === profile.name) : leads;
-  const agingCount       = myLeads.filter(isAging).length;
+  const agingCount       = leads.filter(isAging).length;
   const pendingApprovals = leads.filter(l=>l.status==="Pending Approval");
   const stats = {
     total:     leads.length,
     newLeads:  leads.filter(l=>l.status==="New").length,
-    assigned:  myLeads.filter(l=>l.status==="Assigned").length,
-    contacted: myLeads.filter(l=>l.status==="Contacted").length,
-    converted: myLeads.filter(l=>l.status==="Converted").length,
+    assigned:  leads.filter(l=>l.status==="Assigned").length,
+    contacted: leads.filter(l=>l.status==="Contacted").length,
+    converted: leads.filter(l=>l.status==="Converted").length,
     pending:   pendingApprovals.length,
   };
   const hasActiveFilters = search||tierFilter||statusFilter||stateFilter||btypeFilter||dateFilter||statClick;
@@ -1359,19 +1343,18 @@ function Dashboard({ session, profile, onLogout }) {
                 { status:"In Progress",label:"In Progress",color:"#a78bfa", bg:"rgba(167,139,250,0.08)" },
                 { status:"Converted",  label:"Converted",  color:"#c9a84c", bg:"rgba(201,168,76,0.08)" },
               ];
-              const pipelineLeads = isAgent ? leads.filter(l => l.agent === profile.name || l.status === "New") : leads;
               return (
                 <div>
                   <div className="page-header">
                     <div>
                       <div className="page-title">Pipeline</div>
-                      <div className="page-sub">{pipelineLeads.length} leads · drag cards to change status</div>
+                      <div className="page-sub">{leads.length} leads · drag cards to change status</div>
                     </div>
                     <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻ Refresh"}</button>
                   </div>
                   <div style={{display:"flex",gap:12,overflowX:"auto",paddingBottom:16,minHeight:500}}>
                     {COLS.map(col => {
-                      const colLeads = pipelineLeads.filter(l => l.status === col.status);
+                      const colLeads = leads.filter(l => l.status === col.status);
                       const isOver   = dragOverCol === col.status;
                       return (
                         <div key={col.status}
@@ -1442,7 +1425,6 @@ function Dashboard({ session, profile, onLogout }) {
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       {stats.pending>0&&<button className="btn" style={{borderColor:"rgba(249,115,22,0.3)",color:"#f97316"}} onClick={()=>setShowApprovals(true)}>⏳ {stats.pending} Pending</button>}
                       <button className="btn" onClick={()=>setShowUserMgr(true)}>+ Add Member</button>
-
                     </div>
                   </div>
                   {/* Global KPIs — clickable drilldown */}
@@ -1523,7 +1505,6 @@ function Dashboard({ session, profile, onLogout }) {
                 <button className="btn" onClick={exportCSV}>↓ Export</button>
                 <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻"}</button>
                 {isAgent && <button className="btn btn-gold" onClick={()=>setShowAddLead(true)}>+ Add Lead</button>}
-
               </div>
             </div>
 
@@ -1539,11 +1520,11 @@ function Dashboard({ session, profile, onLogout }) {
               </div>
               <div className={`stat-card${statClick==="assigned"?" active":""}`} onClick={()=>handleStatClick("assigned")}>
                 <div className="stat-num">{stats.assigned}</div>
-                <div className="stat-lbl">{isAgent?"My Assigned":"Assigned"}</div>
+                <div className="stat-lbl">Assigned</div>
               </div>
               <div className={`stat-card${statClick==="contacted"?" active":""}`} onClick={()=>handleStatClick("contacted")}>
                 <div className="stat-num" style={{color:"#60a5fa"}}>{stats.contacted}</div>
-                <div className="stat-lbl">{isAgent?"My Contacted":"Contacted"}</div>
+                <div className="stat-lbl">Contacted</div>
               </div>
               {canSeeAll && (
                 <div className={`stat-card pending-card${statClick==="pending"?" active":""}`} onClick={()=>handleStatClick("pending")}>
@@ -1553,11 +1534,11 @@ function Dashboard({ session, profile, onLogout }) {
               )}
               <div className={`stat-card${statClick==="converted"?" active":""}`} onClick={()=>handleStatClick("converted")}>
                 <div className="stat-num stat-accent">{stats.converted}</div>
-                <div className="stat-lbl">{isAgent?"My Converted":"Converted"}</div>
+                <div className="stat-lbl">Converted</div>
               </div>
               <div className={`stat-card aging-card${statClick==="aging"?" active":""}`} onClick={()=>handleStatClick("aging")}>
                 <div className="stat-num" style={agingCount>0?{color:"#ef4444"}:{}}>{agingCount}</div>
-                <div className="stat-lbl">{isAgent?`My Aging ${AGING_DAYS}d+`:`Aging ${AGING_DAYS}d+`}</div>
+                <div className="stat-lbl">Aging {AGING_DAYS}d+</div>
               </div>
             </div>
 
@@ -1727,18 +1708,6 @@ function Dashboard({ session, profile, onLogout }) {
         </div>
       )}
 
-      {confirmDeleteAll&&(
-        <div className="confirm-overlay" onClick={e=>e.target===e.currentTarget&&setConfirmDeleteAll(false)}>
-          <div className="confirm-box">
-            <div className="confirm-title" style={{color:"#ef4444"}}>⚠ Delete ALL {leads.length} Leads?</div>
-            <div className="confirm-body">This will permanently delete every lead in the database. This action <strong>cannot be undone</strong>.</div>
-            <div style={{display:"flex",gap:8}}>
-              <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={()=>setConfirmDeleteAll(false)} disabled={deletingAll}>Cancel</button>
-              <button className="btn btn-danger" style={{flex:1,justifyContent:"center",background:"rgba(239,68,68,0.15)",color:"#ef4444",borderColor:"rgba(239,68,68,0.4)"}} onClick={deleteAllLeads} disabled={deletingAll}>{deletingAll?"Deleting…":"Delete All"}</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* LEAD DETAIL DRAWER */}
       {selected&&(
@@ -2092,8 +2061,8 @@ function Dashboard({ session, profile, onLogout }) {
                     <span style={{fontWeight:700,color:"#e2e8f0",fontSize:14}}>{scrapeStatus?.status==="done"?"Complete":"Scraping…"}</span>
                     <span style={{fontSize:13,color:"#c9a84c",fontWeight:700}}>{scrapeStatus?.added??0} <span style={{color:"#334155",fontWeight:400}}>/ {scrapeConfig.max_total}</span></span>
                   </div>
-                  <div className="progress-wrap"><div className="progress-fill" style={{width:`${scrapeStatus?.status==="done"||scrapeStatus?.status==="cancelled"?100:scrapeStatus?.progress??0}%`}}/></div>
-                  <div style={{fontSize:11,color:"#334155"}}>{scrapeStatus?.status==="done"||scrapeStatus?.status==="cancelled"?100:scrapeStatus?.progress??0}% complete</div>
+                  <div className="progress-wrap"><div className="progress-fill" style={{width:`${scrapeStatus?.progress??0}%`}}/></div>
+                  <div style={{fontSize:11,color:"#334155"}}>{scrapeStatus?.progress??0}% complete</div>
                   {scrapeStatus?.status!=="done"&&scrapeStatus?.status!=="cancelled"&&<button className="btn btn-danger" onClick={cancelScrape}>Stop Scraping</button>}
                   {(scrapeStatus?.status==="done"||scrapeStatus?.status==="cancelled")&&<button className="btn btn-gold" onClick={()=>{setScrapeJob(null);setScrapeStatus(null);setShowFindLeads(false);}}>Done</button>}
                 </div>
