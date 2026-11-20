@@ -73,17 +73,17 @@ function getDateRange(value) {
 }
 
 function statusColor(s) {
-  if (s === "Converted")        return "#c9a84c";
-  if (s === "Pending Approval") return "#f97316";
-  if (s === "Contacted")        return "#60a5fa";
+  if (s === "Converted")        return "#B58C91";
+  if (s === "Pending Approval") return "#9B4A58";
+  if (s === "Contacted")        return "#C8BFB0";
   if (s === "In Progress")      return "#a78bfa";
-  if (s === "Assigned")         return "#94a3b8";
+  if (s === "Assigned")         return "#C8BFB0";
   return "#475569";
 }
 
 function statusBg(s) {
-  if (s === "Converted")        return "rgba(201,168,76,0.12)";
-  if (s === "Pending Approval") return "rgba(249,115,22,0.12)";
+  if (s === "Converted")        return "rgba(181,140,145,0.12)";
+  if (s === "Pending Approval") return "rgba(155,74,88,0.12)";
   if (s === "Contacted")        return "rgba(96,165,250,0.12)";
   if (s === "In Progress")      return "rgba(167,139,250,0.12)";
   if (s === "Assigned")         return "rgba(148,163,184,0.12)";
@@ -91,14 +91,14 @@ function statusBg(s) {
 }
 
 function tierColor(t) {
-  if (t === "Corporate") return { bg: "rgba(201,168,76,0.15)", color: "#c9a84c" };
-  if (t === "SME")       return { bg: "rgba(96,165,250,0.1)", color: "#60a5fa" };
-  return { bg: "rgba(148,163,184,0.08)", color: "#94a3b8" };
+  if (t === "Corporate") return { bg: "rgba(181,140,145,0.15)", color: "#B58C91" };
+  if (t === "SME")       return { bg: "rgba(255,255,255,0.04)", color: "#C8BFB0" };
+  return { bg: "rgba(148,163,184,0.08)", color: "#C8BFB0" };
 }
 
 function roleColor(r) {
-  if (r === "admin")          return { bg: "rgba(239,68,68,0.1)", color: "#ef4444" };
-  if (r === "branch_manager") return { bg: "rgba(201,168,76,0.15)", color: "#c9a84c" };
+  if (r === "admin")          return { bg: "rgba(192,64,64,0.1)", color: "#C04040" };
+  if (r === "branch_manager") return { bg: "rgba(181,140,145,0.15)", color: "#B58C91" };
   return { bg: "rgba(52,211,153,0.1)", color: "#34d399" };
 }
 
@@ -143,16 +143,16 @@ function LoginScreen() {
     else setResetSent(true);
   }
 
-  const inputStyle = {background:"#0d1b3e",border:"1px solid #1e3a5f",borderRadius:8,color:"#e2e8f0",fontSize:14,fontFamily:"inherit",padding:"12px 14px",outline:"none",width:"100%"};
-  const labelStyle = {fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600};
+  const inputStyle = {background:"#2C1F22",border:"1px solid #6B5558",borderRadius:8,color:"#F2EEE7",fontSize:14,fontFamily:"inherit",padding:"12px 14px",outline:"none",width:"100%"};
+  const labelStyle = {fontSize:11,color:"#8A7678",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600};
 
   return (
-    <div style={{minHeight:"100vh",background:"#060d1f",display:"flex",fontFamily:"'DM Sans',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#1C1416",display:"flex",fontFamily:"'DM Sans',sans-serif"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
         <div style={{width:"100%",maxWidth:380}}>
           <div style={{marginBottom:32}}>
-            <div style={{fontWeight:800,fontSize:28,color:"#e2e8f0",letterSpacing:"-0.03em",marginBottom:6}}>Script</div>
+            <div style={{fontWeight:800,fontSize:28,color:"#F2EEE7",letterSpacing:"-0.03em",marginBottom:6}}>Scrape</div>
             <div style={{fontSize:14,color:"#475569"}}>{mode==="forgot"?"Reset your password":"Sign in to your workspace"}</div>
           </div>
 
@@ -160,9 +160,9 @@ function LoginScreen() {
             resetSent ? (
               <div style={{textAlign:"center",padding:"24px 0"}}>
                 <div style={{fontSize:32,marginBottom:12}}>📧</div>
-                <div style={{fontWeight:600,color:"#e2e8f0",marginBottom:8}}>Check your email</div>
-                <div style={{fontSize:13,color:"#64748b",marginBottom:20}}>We sent a password reset link to <strong style={{color:"#c9a84c"}}>{email}</strong></div>
-                <button style={{background:"none",border:"none",color:"#c9a84c",fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("login");setResetSent(false);}}>← Back to sign in</button>
+                <div style={{fontWeight:600,color:"#F2EEE7",marginBottom:8}}>Check your email</div>
+                <div style={{fontSize:13,color:"#8A7678",marginBottom:20}}>We sent a password reset link to <strong style={{color:"#B58C91"}}>{email}</strong></div>
+                <button style={{background:"none",border:"none",color:"#B58C91",fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("login");setResetSent(false);}}>← Back to sign in</button>
               </div>
             ) : (
               <form onSubmit={handleForgotPassword} style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -170,11 +170,11 @@ function LoginScreen() {
                   <label style={labelStyle}>Email address</label>
                   <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@bank.com" style={inputStyle} />
                 </div>
-                {error && <div style={{fontSize:12,color:"#ef4444",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:7,padding:"9px 12px"}}>{error}</div>}
-                <button type="submit" disabled={resetLoading} style={{background:"#c9a84c",border:"none",borderRadius:8,color:"#060d1f",fontWeight:700,fontSize:14,fontFamily:"inherit",padding:"13px",cursor:resetLoading?"not-allowed":"pointer",opacity:resetLoading?0.7:1}}>
+                {error && <div style={{fontSize:12,color:"#C04040",background:"rgba(192,64,64,0.08)",border:"1px solid rgba(192,64,64,0.2)",borderRadius:7,padding:"9px 12px"}}>{error}</div>}
+                <button type="submit" disabled={resetLoading} style={{background:"#B58C91",border:"none",borderRadius:8,color:"#1C1416",fontWeight:700,fontSize:14,fontFamily:"inherit",padding:"13px",cursor:resetLoading?"not-allowed":"pointer",opacity:resetLoading?0.7:1}}>
                   {resetLoading?"Sending…":"Send Reset Link"}
                 </button>
-                <button type="button" style={{background:"none",border:"none",color:"#64748b",fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("login");setError("");}}>← Back to sign in</button>
+                <button type="button" style={{background:"none",border:"none",color:"#8A7678",fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("login");setError("");}}>← Back to sign in</button>
               </form>
             )
           ) : (
@@ -186,9 +186,9 @@ function LoginScreen() {
               </button>
 
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-                <div style={{flex:1,height:1,background:"#1e3a5f"}}/>
-                <span style={{fontSize:11,color:"#334155"}}>or</span>
-                <div style={{flex:1,height:1,background:"#1e3a5f"}}/>
+                <div style={{flex:1,height:1,background:"#6B5558"}}/>
+                <span style={{fontSize:11,color:"#A79A8D"}}>or</span>
+                <div style={{flex:1,height:1,background:"#6B5558"}}/>
               </div>
 
               <form onSubmit={handleLogin} style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -199,18 +199,18 @@ function LoginScreen() {
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <label style={labelStyle}>Password</label>
-                    <button type="button" style={{background:"none",border:"none",color:"#c9a84c",fontSize:11,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("forgot");setError("");}}>Forgot password?</button>
+                    <button type="button" style={{background:"none",border:"none",color:"#B58C91",fontSize:11,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("forgot");setError("");}}>Forgot password?</button>
                   </div>
                   <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={inputStyle} />
                 </div>
-                {error && <div style={{fontSize:12,color:"#ef4444",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:7,padding:"9px 12px"}}>{error}</div>}
-                <button type="submit" disabled={loading} style={{marginTop:4,background:"#c9a84c",border:"none",borderRadius:8,color:"#060d1f",fontWeight:700,fontSize:14,fontFamily:"inherit",padding:"13px",cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1}}>
+                {error && <div style={{fontSize:12,color:"#C04040",background:"rgba(192,64,64,0.08)",border:"1px solid rgba(192,64,64,0.2)",borderRadius:7,padding:"9px 12px"}}>{error}</div>}
+                <button type="submit" disabled={loading} style={{marginTop:4,background:"#B58C91",border:"none",borderRadius:8,color:"#1C1416",fontWeight:700,fontSize:14,fontFamily:"inherit",padding:"13px",cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1}}>
                   {loading ? "Signing in…" : "Sign in"}
                 </button>
               </form>
             </>
           )}
-          <div style={{textAlign:"center",marginTop:28,fontSize:12,color:"#1e3a5f"}}>Script · Secure access only</div>
+          <div style={{textAlign:"center",marginTop:28,fontSize:12,color:"#6B5558"}}>Scrape · Secure access only</div>
         </div>
       </div>
     </div>
@@ -242,7 +242,7 @@ export default function App() {
   }
 
   if (session === undefined || (session && profileLoading)) return (
-    <div style={{minHeight:"100vh",background:"#060d1f",display:"flex",alignItems:"center",justifyContent:"center",color:"#475569",fontFamily:"DM Sans,sans-serif",fontSize:13}}>
+    <div style={{minHeight:"100vh",background:"#1C1416",display:"flex",alignItems:"center",justifyContent:"center",color:"#475569",fontFamily:"DM Sans,sans-serif",fontSize:13}}>
       Loading…
     </div>
   );
@@ -250,13 +250,13 @@ export default function App() {
   if (!session) return <LoginScreen />;
 
   if (!profile) return (
-    <div style={{minHeight:"100vh",background:"#060d1f",display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"DM Sans,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#1C1416",display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"DM Sans,sans-serif"}}>
       <div style={{textAlign:"center",maxWidth:360}}>
-        <div style={{fontWeight:800,fontSize:28,color:"#e2e8f0",letterSpacing:"-0.02em",marginBottom:4}}>Script</div>
-        <div style={{fontWeight:700,fontSize:18,color:"#e2e8f0",marginBottom:12,marginTop:24}}>Access Pending</div>
+        <div style={{fontWeight:800,fontSize:28,color:"#F2EEE7",letterSpacing:"-0.02em",marginBottom:4}}>Scrape</div>
+        <div style={{fontWeight:700,fontSize:18,color:"#F2EEE7",marginBottom:12,marginTop:24}}>Access Pending</div>
         <div style={{fontSize:13,color:"#475569",lineHeight:1.7,marginBottom:20}}>Your account has been created but no role has been assigned. Contact your branch manager or administrator.</div>
-        <div style={{fontSize:12,color:"#1e3a5f",marginBottom:20,background:"#0d1b3e",border:"1px solid #1e3a5f",borderRadius:7,padding:"8px 12px"}}>{session.user.email}</div>
-        <button style={{background:"transparent",border:"1px solid #1e3a5f",borderRadius:8,color:"#64748b",fontSize:13,fontFamily:"inherit",padding:"10px 20px",cursor:"pointer"}} onClick={() => supabase.auth.signOut()}>Sign out</button>
+        <div style={{fontSize:12,color:"#6B5558",marginBottom:20,background:"#2C1F22",border:"1px solid #6B5558",borderRadius:7,padding:"8px 12px"}}>{session.user.email}</div>
+        <button style={{background:"transparent",border:"1px solid #6B5558",borderRadius:8,color:"#8A7678",fontSize:13,fontFamily:"inherit",padding:"10px 20px",cursor:"pointer"}} onClick={() => supabase.auth.signOut()}>Sign out</button>
       </div>
     </div>
   );
@@ -787,34 +787,34 @@ function Dashboard({ session, profile, onLogout }) {
   const Sidebar = () => (
     <div style={{display:"flex",flexDirection:"column",height:"100%",padding:"24px 0"}}>
       {/* Logo */}
-      <div style={{padding:"0 20px 28px",borderBottom:"1px solid rgba(201,168,76,0.1)"}}>
-        <div style={{fontWeight:800,fontSize:22,color:"#e2e8f0",letterSpacing:"-0.03em"}}>Script</div>
-        <div style={{fontSize:10,color:"#334155",marginTop:3,textTransform:"uppercase",letterSpacing:"0.1em"}}>Lead Intelligence</div>
+      <div style={{padding:"0 20px 28px",borderBottom:"1px solid rgba(181,140,145,0.1)"}}>
+        <div style={{fontWeight:800,fontSize:22,color:"#F2EEE7",letterSpacing:"-0.03em"}}>Scrape</div>
+        <div style={{fontSize:10,color:"#A79A8D",marginTop:3,textTransform:"uppercase",letterSpacing:"0.1em"}}>Lead Intelligence</div>
       </div>
       {/* Nav */}
       <div style={{flex:1,padding:"16px 12px",display:"flex",flexDirection:"column",gap:2}}>
         {NAV.map(n=>(
-          <button key={n.id} onClick={()=>navClick(n.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:"none",background:activePage===n.id?"rgba(201,168,76,0.1)":"transparent",color:activePage===n.id?"#c9a84c":"#64748b",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:500,textAlign:"left",width:"100%",transition:"all 0.15s",position:"relative"}}>
+          <button key={n.id} onClick={()=>navClick(n.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:"none",background:activePage===n.id?"rgba(181,140,145,0.1)":"transparent",color:activePage===n.id?"#B58C91":"#8A7678",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:500,textAlign:"left",width:"100%",transition:"all 0.15s",position:"relative"}}>
             <span style={{fontSize:14,width:16,textAlign:"center"}}>{n.icon}</span>
             {n.label}
-            {n.badge>0&&<span style={{marginLeft:"auto",background:"#f97316",color:"#fff",borderRadius:99,padding:"1px 7px",fontSize:10,fontWeight:700}}>{n.badge}</span>}
+            {n.badge>0&&<span style={{marginLeft:"auto",background:"#9B4A58",color:"#fff",borderRadius:99,padding:"1px 7px",fontSize:10,fontWeight:700}}>{n.badge}</span>}
           </button>
         ))}
       </div>
       {/* User info */}
       <div style={{padding:"16px 20px",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-          <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(201,168,76,0.15)",border:"1px solid rgba(201,168,76,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#c9a84c",flexShrink:0}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(181,140,145,0.15)",border:"1px solid rgba(181,140,145,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#B58C91",flexShrink:0}}>
             {(profile.name||"U")[0].toUpperCase()}
           </div>
           <div style={{minWidth:0}}>
-            <div style={{fontSize:12,fontWeight:600,color:"#cbd5e1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{profile.name||"User"}</div>
-            <div style={{fontSize:10,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session.user.email}</div>
+            <div style={{fontSize:12,fontWeight:600,color:"#DDD8D0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{profile.name||"User"}</div>
+            <div style={{fontSize:10,color:"#A79A8D",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session.user.email}</div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:"0.05em",background:roleColor(role).bg,color:roleColor(role).color}}>{role.replace("_"," ")}</span>
-          <button onClick={onLogout} style={{background:"none",border:"none",color:"#334155",fontSize:11,cursor:"pointer",fontFamily:"inherit",padding:"4px 8px",borderRadius:5,transition:"color 0.15s"}} onMouseOver={e=>e.target.style.color="#ef4444"} onMouseOut={e=>e.target.style.color="#334155"}>Sign out</button>
+          <button onClick={onLogout} style={{background:"none",border:"none",color:"#A79A8D",fontSize:11,cursor:"pointer",fontFamily:"inherit",padding:"4px 8px",borderRadius:5,transition:"color 0.15s"}} onMouseOver={e=>e.target.style.color="#C04040"} onMouseOut={e=>e.target.style.color="#A79A8D"}>Sign out</button>
         </div>
       </div>
     </div>
@@ -825,25 +825,25 @@ function Dashboard({ session, profile, onLogout }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #060d1f; color: #e2e8f0; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+        body { background: #1C1416; color: #F2EEE7; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
 
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb { background: #6B5558; border-radius: 2px; }
 
         .app-layout { display: flex; min-height: 100vh; }
 
-        .sidebar { width: 220px; background: #080f24; border-right: 1px solid rgba(255,255,255,0.04); flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+        .sidebar { width: 220px; background: #302729; border-right: 1px solid rgba(84,45,56,0.4); flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
         @media(max-width:768px){ .sidebar { display: none; } }
 
         .sidebar-mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 300; }
-        .sidebar-mobile { display: none; position: fixed; top: 0; left: 0; bottom: 0; width: 240px; background: #080f24; border-right: 1px solid rgba(255,255,255,0.04); z-index: 301; overflow-y: auto; }
+        .sidebar-mobile { display: none; position: fixed; top: 0; left: 0; bottom: 0; width: 240px; background: #302729; border-right: 1px solid rgba(84,45,56,0.4); z-index: 301; overflow-y: auto; }
         @media(max-width:768px){
           .sidebar-mobile-overlay.open { display: block; }
           .sidebar-mobile.open { display: block; }
         }
 
-        .mobile-topbar { display: none; position: sticky; top: 0; z-index: 100; background: rgba(8,15,36,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.04); padding: 12px 16px; align-items: center; justify-content: space-between; }
+        .mobile-topbar { display: none; position: sticky; top: 0; z-index: 100; background: rgba(28,20,22,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.04); padding: 12px 16px; align-items: center; justify-content: space-between; }
         @media(max-width:768px){ .mobile-topbar { display: flex; } }
 
         .main-content { flex: 1; min-width: 0; overflow-x: hidden; }
@@ -851,173 +851,173 @@ function Dashboard({ session, profile, onLogout }) {
         @media(max-width:768px){ .page-inner { padding: 16px; } }
 
         .page-header { margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-        .page-title { font-size: 20px; font-weight: 800; color: #e2e8f0; letter-spacing: -0.02em; }
-        .page-sub { font-size: 12px; color: #334155; margin-top: 3px; }
+        .page-title { font-size: 20px; font-weight: 800; color: #F2EEE7; letter-spacing: -0.02em; }
+        .page-sub { font-size: 12px; color: #A79A8D; margin-top: 3px; }
 
-        .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #94a3b8; cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: inherit; letter-spacing: 0.01em; }
-        .btn:hover { background: rgba(255,255,255,0.08); color: #cbd5e1; border-color: rgba(255,255,255,0.12); }
-        .btn-gold { background: #c9a84c; border-color: #c9a84c; color: #060d1f; font-weight: 700; }
-        .btn-gold:hover { background: #d4b55e; border-color: #d4b55e; color: #060d1f; }
-        .btn-danger { border-color: rgba(239,68,68,0.2); color: #ef4444; }
-        .btn-danger:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); }
+        .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #C8BFB0; cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: inherit; letter-spacing: 0.01em; }
+        .btn:hover { background: rgba(255,255,255,0.08); color: #DDD8D0; border-color: rgba(255,255,255,0.12); }
+        .btn-gold { background: #B58C91; border-color: #B58C91; color: #1C1416; font-weight: 700; }
+        .btn-gold:hover { background: #C4989D; border-color: #C4989D; color: #1C1416; }
+        .btn-danger { border-color: rgba(192,64,64,0.2); color: #C04040; }
+        .btn-danger:hover { background: rgba(192,64,64,0.08); border-color: rgba(192,64,64,0.3); }
 
-        .card { background: #0d1b3e; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; }
+        .card { background: #2C1F22; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; }
 
         .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 20px; }
         @media(min-width:600px){ .stat-grid { grid-template-columns: repeat(3,1fr); } }
         @media(min-width:900px){ .stat-grid { grid-template-columns: repeat(6,1fr); } }
-        .stat-card { background: #0d1b3e; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.15s; user-select: none; }
-        .stat-card:hover { border-color: rgba(201,168,76,0.2); background: #0f1f47; }
-        .stat-card.active { border-color: rgba(201,168,76,0.4); background: #0f1f47; }
-        .stat-card.pending-card { border-color: rgba(249,115,22,0.15); }
-        .stat-card.pending-card.active { border-color: rgba(249,115,22,0.4); }
-        .stat-card.aging-card { border-color: rgba(239,68,68,0.1); }
-        .stat-card.aging-card.active { border-color: rgba(239,68,68,0.3); }
-        .stat-num { font-weight: 800; font-size: 28px; letter-spacing: -0.04em; color: #e2e8f0; line-height: 1; }
-        .stat-lbl { font-size: 11px; color: #334155; margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
-        .stat-accent { color: #c9a84c; }
+        .stat-card { background: #2C1F22; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.15s; user-select: none; }
+        .stat-card:hover { border-color: rgba(181,140,145,0.2); background: #321F23; }
+        .stat-card.active { border-color: rgba(181,140,145,0.4); background: #321F23; }
+        .stat-card.pending-card { border-color: rgba(155,74,88,0.15); }
+        .stat-card.pending-card.active { border-color: rgba(155,74,88,0.4); }
+        .stat-card.aging-card { border-color: rgba(192,64,64,0.1); }
+        .stat-card.aging-card.active { border-color: rgba(192,64,64,0.3); }
+        .stat-num { font-weight: 800; font-size: 28px; letter-spacing: -0.04em; color: #F2EEE7; line-height: 1; }
+        .stat-lbl { font-size: 11px; color: #A79A8D; margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+        .stat-accent { color: #B58C91; }
 
-        .filters-card { background: #0d1b3e; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+        .filters-card { background: #2C1F22; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
         .filters-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .filters-label { font-size: 10px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.08em; }
+        .filters-label { font-size: 10px; font-weight: 700; color: #A79A8D; text-transform: uppercase; letter-spacing: 0.08em; }
         .filters-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
         @media(min-width:700px){ .filters-grid { grid-template-columns: repeat(3,1fr); } }
         @media(min-width:1000px){ .filters-grid { grid-template-columns: repeat(6,1fr); } }
-        .fi { background: #060d1f; border: 1px solid rgba(255,255,255,0.05); border-radius: 7px; color: #94a3b8; font-size: 12px; font-family: inherit; padding: 7px 10px; outline: none; width: 100%; transition: border-color 0.15s; }
-        .fi:focus { border-color: rgba(201,168,76,0.3); }
-        .fi::placeholder { color: #1e3a5f; }
-        .fi option { background: #0d1b3e; }
+        .fi { background: #1C1416; border: 1px solid rgba(255,255,255,0.05); border-radius: 7px; color: #C8BFB0; font-size: 12px; font-family: inherit; padding: 7px 10px; outline: none; width: 100%; transition: border-color 0.15s; }
+        .fi:focus { border-color: rgba(181,140,145,0.3); }
+        .fi::placeholder { color: #6B5558; }
+        .fi option { background: #2C1F22; }
         .search-full { grid-column: 1 / -1; }
         @media(min-width:1000px){ .search-full { grid-column: auto; } }
-        .clear-link { font-size: 11px; color: #334155; background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; transition: color 0.15s; }
-        .clear-link:hover { color: #ef4444; }
+        .clear-link { font-size: 11px; color: #A79A8D; background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; transition: color 0.15s; }
+        .clear-link:hover { color: #C04040; }
 
-        .bulk-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(201,168,76,0.05); border: 1px solid rgba(201,168,76,0.15); border-radius: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-        .bulk-bar span { font-size: 12px; color: #c9a84c; font-weight: 600; flex: 1; }
+        .bulk-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(181,140,145,0.05); border: 1px solid rgba(181,140,145,0.15); border-radius: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .bulk-bar span { font-size: 12px; color: #B58C91; font-weight: 600; flex: 1; }
 
-        .table-card { background: #0d1b3e; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; overflow: hidden; }
+        .table-card { background: #2C1F22; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; overflow: hidden; }
         .table-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); flex-wrap: wrap; gap: 8px; }
-        .table-title { font-size: 13px; font-weight: 700; color: #e2e8f0; }
-        .lead-badge { font-size: 10px; color: #334155; background: #060d1f; border: 1px solid rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 20px; margin-left: 8px; font-weight: 600; }
+        .table-title { font-size: 13px; font-weight: 700; color: #F2EEE7; }
+        .lead-badge { font-size: 10px; color: #A79A8D; background: #1C1416; border: 1px solid rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 20px; margin-left: 8px; font-weight: 600; }
         .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 640px; }
-        thead th { text-align: left; padding: 10px 14px; font-size: 10px; font-weight: 700; color: #1e3a5f; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.04); background: #080f24; white-space: nowrap; }
+        thead th { text-align: left; padding: 10px 14px; font-size: 10px; font-weight: 700; color: #6B5558; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.04); background: #1C1416; white-space: nowrap; }
         tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer; transition: background 0.1s; }
         tbody tr:last-child { border-bottom: none; }
         tbody tr:hover { background: rgba(255,255,255,0.02); }
-        tbody tr.row-sel { background: rgba(201,168,76,0.04); }
-        tbody tr.row-aging { border-left: 2px solid #ef4444; }
-        tbody tr.row-pending { border-left: 2px solid #f97316; }
+        tbody tr.row-sel { background: rgba(181,140,145,0.04); }
+        tbody tr.row-aging { border-left: 2px solid #C04040; }
+        tbody tr.row-pending { border-left: 2px solid #9B4A58; }
         td { padding: 11px 14px; color: #475569; vertical-align: middle; }
-        td.td-name { color: #cbd5e1; font-weight: 600; white-space: nowrap; }
+        td.td-name { color: #DDD8D0; font-weight: 600; white-space: nowrap; }
         td.td-chk { width: 36px; }
-        input[type="checkbox"] { width: 14px; height: 14px; accent-color: #c9a84c; cursor: pointer; }
+        input[type="checkbox"] { width: 14px; height: 14px; accent-color: #B58C91; cursor: pointer; }
 
         .pill { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; white-space: nowrap; letter-spacing: 0.03em; }
         .status-pill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
         .score-wrap { display: flex; align-items: center; gap: 7px; min-width: 70px; }
         .score-bar { flex: 1; height: 3px; background: #0a1628; border-radius: 2px; overflow: hidden; min-width: 36px; }
-        .score-fill { height: 100%; border-radius: 2px; background: #c9a84c; }
+        .score-fill { height: 100%; border-radius: 2px; background: #B58C91; }
 
         .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.04); flex-wrap: wrap; gap: 8px; }
-        .pg-info { font-size: 11px; color: #334155; }
+        .pg-info { font-size: 11px; color: #A79A8D; }
         .pg-btns { display: flex; gap: 4px; flex-wrap: wrap; }
-        .pg-btn { background: #060d1f; border: 1px solid rgba(255,255,255,0.05); color: #334155; font-size: 11px; font-family: inherit; padding: 4px 10px; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
-        .pg-btn:hover { color: #94a3b8; border-color: rgba(255,255,255,0.1); }
-        .pg-btn.pg-active { background: #c9a84c; border-color: #c9a84c; color: #060d1f; font-weight: 700; }
+        .pg-btn { background: #1C1416; border: 1px solid rgba(255,255,255,0.05); color: #A79A8D; font-size: 11px; font-family: inherit; padding: 4px 10px; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+        .pg-btn:hover { color: #C8BFB0; border-color: rgba(255,255,255,0.1); }
+        .pg-btn.pg-active { background: #B58C91; border-color: #B58C91; color: #1C1416; font-weight: 700; }
         .pg-btn:disabled { opacity: 0.2; pointer-events: none; }
 
         /* Lead cards for mobile */
         .lead-cards { display: none; flex-direction: column; gap: 8px; padding: 12px; }
         @media(max-width:640px){ .tbl-scroll { display: none; } .lead-cards { display: flex; } }
-        .lead-card { background: #080f24; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.15s; }
-        .lead-card:hover { border-color: rgba(201,168,76,0.2); }
-        .lead-card.lc-aging { border-left: 2px solid #ef4444; }
-        .lead-card.lc-pending { border-left: 2px solid #f97316; }
+        .lead-card { background: #1C1416; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.15s; }
+        .lead-card:hover { border-color: rgba(181,140,145,0.2); }
+        .lead-card.lc-aging { border-left: 2px solid #C04040; }
+        .lead-card.lc-pending { border-left: 2px solid #9B4A58; }
         .lc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
-        .lc-name { font-size: 14px; font-weight: 700; color: #e2e8f0; }
+        .lc-name { font-size: 14px; font-weight: 700; color: #F2EEE7; }
         .lc-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
         .lc-tag { font-size: 10px; color: #475569; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 2px 6px; }
         .lc-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
 
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; backdrop-filter: blur(2px); }
-        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px,100vw); background: #080f24; border-left: 1px solid rgba(255,255,255,0.06); z-index: 201; overflow-y: auto; display: flex; flex-direction: column; }
-        .drawer-header { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #080f24; z-index: 1; }
+        .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px,100vw); background: #1C1416; border-left: 1px solid rgba(255,255,255,0.06); z-index: 201; overflow-y: auto; display: flex; flex-direction: column; }
+        .drawer-header { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #1C1416; z-index: 1; }
         .drawer-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
-        .drawer-name { font-weight: 800; font-size: 18px; color: #e2e8f0; letter-spacing: -0.02em; }
+        .drawer-name { font-weight: 800; font-size: 18px; color: #F2EEE7; letter-spacing: -0.02em; }
         .drawer-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 12px; gap: 12px; }
-        .dr-label { color: #334155; flex-shrink: 0; font-weight: 500; }
-        .dr-value { color: #94a3b8; font-weight: 500; text-align: right; }
+        .dr-label { color: #A79A8D; flex-shrink: 0; font-weight: 500; }
+        .dr-value { color: #C8BFB0; font-weight: 500; text-align: right; }
 
         .detail-tabs { display: flex; gap: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .dtab { background: none; border: none; border-bottom: 2px solid transparent; color: #334155; font-family: inherit; font-size: 12px; font-weight: 600; padding: 8px 14px; cursor: pointer; margin-bottom: -1px; transition: all 0.15s; letter-spacing: 0.02em; }
-        .dtab.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+        .dtab { background: none; border: none; border-bottom: 2px solid transparent; color: #A79A8D; font-family: inherit; font-size: 12px; font-weight: 600; padding: 8px 14px; cursor: pointer; margin-bottom: -1px; transition: all 0.15s; letter-spacing: 0.02em; }
+        .dtab.active { color: #B58C91; border-bottom-color: #B58C91; }
 
         .comment-list { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
-        .comment-item { background: #060d1f; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px; }
-        .comment-meta { font-size: 10px; color: #334155; margin-bottom: 4px; font-weight: 500; }
-        .comment-text { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+        .comment-item { background: #1C1416; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px; }
+        .comment-meta { font-size: 10px; color: #A79A8D; margin-bottom: 4px; font-weight: 500; }
+        .comment-text { font-size: 12px; color: #C8BFB0; line-height: 1.5; }
 
         .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
-        .history-item { font-size: 11px; color: #475569; border-left: 2px solid #1e3a5f; padding: 4px 10px; }
+        .history-item { font-size: 11px; color: #475569; border-left: 2px solid #6B5558; padding: 4px 10px; }
 
-        .followup-item { background: #060d1f; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
-        .followup-item.overdue { border-color: rgba(239,68,68,0.2); }
+        .followup-item { background: #1C1416; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+        .followup-item.overdue { border-color: rgba(192,64,64,0.2); }
         .followup-item.fu-done { opacity: 0.35; }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 300; display: flex; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
         @media(min-width:600px){ .modal-overlay { align-items: center; } }
-        .modal { background: #080f24; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px 16px 0 0; width: 100%; max-width: 540px; max-height: 92vh; overflow-y: auto; display: flex; flex-direction: column; }
+        .modal { background: #1C1416; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px 16px 0 0; width: 100%; max-width: 540px; max-height: 92vh; overflow-y: auto; display: flex; flex-direction: column; }
         @media(min-width:600px){ .modal { border-radius: 16px; } }
-        .modal-header { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #080f24; }
-        .modal-title { font-size: 15px; font-weight: 800; color: #e2e8f0; letter-spacing: -0.02em; }
+        .modal-header { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #1C1416; }
+        .modal-title { font-size: 15px; font-weight: 800; color: #F2EEE7; letter-spacing: -0.02em; }
         .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 
         .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-label { font-size: 10px; color: #334155; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
-        .form-input, .form-select, .form-textarea { background: #060d1f; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; color: #94a3b8; font-size: 13px; font-family: inherit; padding: 10px 12px; outline: none; width: 100%; transition: border-color 0.15s; }
-        .form-input:focus, .form-select:focus { border-color: rgba(201,168,76,0.3); color: #cbd5e1; }
-        .form-input::placeholder { color: #1e3a5f; }
+        .form-label { font-size: 10px; color: #A79A8D; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+        .form-input, .form-select, .form-textarea { background: #1C1416; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; color: #C8BFB0; font-size: 13px; font-family: inherit; padding: 10px 12px; outline: none; width: 100%; transition: border-color 0.15s; }
+        .form-input:focus, .form-select:focus { border-color: rgba(181,140,145,0.3); color: #DDD8D0; }
+        .form-input::placeholder { color: #6B5558; }
         .form-textarea { resize: vertical; min-height: 70px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .form-hint { font-size: 10px; color: #1e3a5f; margin-top: 2px; }
+        .form-hint { font-size: 10px; color: #6B5558; margin-top: 2px; }
 
         .user-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .user-table th { text-align: left; padding: 8px 10px; font-size: 10px; color: #1e3a5f; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.04); font-weight: 700; }
+        .user-table th { text-align: left; padding: 8px 10px; font-size: 10px; color: #6B5558; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.04); font-weight: 700; }
         .user-table td { padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,0.03); color: #475569; }
-        .user-table td:first-child { color: #94a3b8; font-weight: 600; }
+        .user-table td:first-child { color: #C8BFB0; font-weight: 600; }
 
-        .audit-item { background: #060d1f; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px; }
-        .audit-action { color: #94a3b8; font-weight: 600; font-size: 12px; }
-        .audit-meta { font-size: 10px; color: #334155; margin-top: 3px; }
+        .audit-item { background: #1C1416; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px; }
+        .audit-action { color: #C8BFB0; font-weight: 600; font-size: 12px; }
+        .audit-meta { font-size: 10px; color: #A79A8D; margin-top: 3px; }
 
-        .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #060d1f; border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; }
-        .lb-rank { font-size: 11px; font-weight: 800; color: #1e3a5f; width: 24px; text-align: center; }
-        .lb-rank.top { color: #c9a84c; }
-        .lb-name { flex: 1; font-size: 13px; color: #cbd5e1; font-weight: 600; }
-        .lb-stat { font-size: 11px; color: #334155; }
-        .lb-converted { font-size: 14px; font-weight: 800; color: #c9a84c; min-width: 30px; text-align: right; }
+        .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #1C1416; border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; }
+        .lb-rank { font-size: 11px; font-weight: 800; color: #6B5558; width: 24px; text-align: center; }
+        .lb-rank.top { color: #B58C91; }
+        .lb-name { flex: 1; font-size: 13px; color: #DDD8D0; font-weight: 600; }
+        .lb-stat { font-size: 11px; color: #A79A8D; }
+        .lb-converted { font-size: 14px; font-weight: 800; color: #B58C91; min-width: 30px; text-align: right; }
 
-        .progress-wrap { background: #060d1f; border-radius: 6px; height: 6px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg,#c9a84c,#d4b55e); border-radius: 6px; transition: width 0.4s; }
+        .progress-wrap { background: #1C1416; border-radius: 6px; height: 6px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg,#B58C91,#C4989D); border-radius: 6px; transition: width 0.4s; }
 
         .kw-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid; cursor: pointer; transition: all 0.1s; font-family: inherit; }
 
         .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
-        .confirm-box { background: #080f24; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 24px; max-width: 340px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
-        .confirm-title { font-size: 15px; font-weight: 800; color: #e2e8f0; }
+        .confirm-box { background: #1C1416; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 24px; max-width: 340px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+        .confirm-title { font-size: 15px; font-weight: 800; color: #F2EEE7; }
         .confirm-body { font-size: 13px; color: #475569; line-height: 1.6; }
 
         .role-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
-        .aging-tag { font-size: 9px; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); border-radius: 4px; padding: 1px 5px; margin-left: 6px; font-weight: 700; letter-spacing: 0.03em; }
+        .aging-tag { font-size: 9px; background: rgba(192,64,64,0.1); color: #C04040; border: 1px solid rgba(192,64,64,0.2); border-radius: 4px; padding: 1px 5px; margin-left: 6px; font-weight: 700; letter-spacing: 0.03em; }
 
         .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); border-radius: 10px; padding: 11px 20px; font-size: 12px; font-weight: 600; z-index: 500; transition: transform 0.3s; white-space: nowrap; font-family: inherit; border: 1px solid; }
         .toast.show { transform: translateX(-50%) translateY(0); }
-        .toast-success { background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.3); color: #c9a84c; }
-        .toast-error   { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ef4444; }
-        .toast-info    { background: rgba(96,165,250,0.1); border-color: rgba(96,165,250,0.2); color: #60a5fa; }
+        .toast-success { background: rgba(181,140,145,0.1); border-color: rgba(181,140,145,0.3); color: #B58C91; }
+        .toast-error   { background: rgba(192,64,64,0.1); border-color: rgba(192,64,64,0.3); color: #C04040; }
+        .toast-info    { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); color: #C8BFB0; }
 
-        .empty-state { text-align: center; padding: 60px 24px; color: #1e3a5f; font-size: 13px; }
+        .empty-state { text-align: center; padding: 60px 24px; color: #6B5558; font-size: 13px; }
         .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.3; }
       `}</style>
 
@@ -1033,8 +1033,8 @@ function Dashboard({ session, profile, onLogout }) {
         <div className="main-content">
           {/* Mobile top bar */}
           <div className="mobile-topbar">
-            <button onClick={()=>setSidebarOpen(true)} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:18,padding:"4px",fontFamily:"inherit"}}>☰</button>
-            <div style={{fontWeight:800,fontSize:18,color:"#e2e8f0",letterSpacing:"-0.02em"}}>Script</div>
+            <button onClick={()=>setSidebarOpen(true)} style={{background:"none",border:"none",color:"#8A7678",cursor:"pointer",fontSize:18,padding:"4px",fontFamily:"inherit"}}>☰</button>
+            <div style={{fontWeight:800,fontSize:18,color:"#F2EEE7",letterSpacing:"-0.02em"}}>Scrape</div>
             <div style={{width:60}} />
           </div>
 
@@ -1050,23 +1050,23 @@ function Dashboard({ session, profile, onLogout }) {
                   </div>
                 </div>
                 {leaderboard.length===0?(
-                  <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"40px 0"}}>No agents yet</div>
+                  <div style={{fontSize:13,color:"#A79A8D",textAlign:"center",padding:"40px 0"}}>No agents yet</div>
                 ):(
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
                     {leaderboard.map((a,i)=>{
                       const convRate = a.assigned>0?Math.round(a.converted/a.assigned*100):0;
                       const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":null;
                       return (
-                        <div key={a.name} style={{background:"#060d1f",border:`1px solid ${i<3?"rgba(201,168,76,0.2)":"rgba(255,255,255,0.05)"}`,borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-                          <div style={{fontSize:16,fontWeight:800,color:i<3?"#c9a84c":"#334155",width:28,flexShrink:0}}>{medal||`#${i+1}`}</div>
-                          <div style={{width:38,height:38,borderRadius:"50%",background:"rgba(201,168,76,0.1)",border:"1px solid rgba(201,168,76,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#c9a84c",flexShrink:0}}>{a.name[0].toUpperCase()}</div>
+                        <div key={a.name} style={{background:"#1C1416",border:`1px solid ${i<3?"rgba(181,140,145,0.2)":"rgba(255,255,255,0.05)"}`,borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                          <div style={{fontSize:16,fontWeight:800,color:i<3?"#B58C91":"#A79A8D",width:28,flexShrink:0}}>{medal||`#${i+1}`}</div>
+                          <div style={{width:38,height:38,borderRadius:"50%",background:"rgba(181,140,145,0.1)",border:"1px solid rgba(181,140,145,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#B58C91",flexShrink:0}}>{a.name[0].toUpperCase()}</div>
                           <div style={{flex:1,minWidth:100}}>
-                            <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{a.name}</div>
-                            <div style={{fontSize:11,color:"#334155",marginTop:2}}>{a.assigned} leads assigned · {convRate}% conversion</div>
+                            <div style={{fontWeight:700,fontSize:14,color:"#F2EEE7"}}>{a.name}</div>
+                            <div style={{fontSize:11,color:"#A79A8D",marginTop:2}}>{a.assigned} leads assigned · {convRate}% conversion</div>
                           </div>
                           <div style={{display:"flex",gap:16,flexShrink:0}}>
-                            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:"#c9a84c"}}>{a.converted}</div><div style={{fontSize:10,color:"#334155"}}>Converted</div></div>
-                            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:"#64748b"}}>{a.assigned}</div><div style={{fontSize:10,color:"#334155"}}>Assigned</div></div>
+                            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:"#B58C91"}}>{a.converted}</div><div style={{fontSize:10,color:"#A79A8D"}}>Converted</div></div>
+                            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:"#8A7678"}}>{a.assigned}</div><div style={{fontSize:10,color:"#A79A8D"}}>Assigned</div></div>
                           </div>
                         </div>
                       );
@@ -1113,7 +1113,7 @@ function Dashboard({ session, profile, onLogout }) {
               const avgScore = totalLeads>0 ? (leads.reduce((s,l)=>s+(l.score||0),0)/totalLeads).toFixed(0) : 0;
 
               // ── small inline bar chart ───────────────────────────
-              function BarChart({ data, color="#c9a84c", height=120 }) {
+              function BarChart({ data, color="#B58C91", height=120 }) {
                 const max = Math.max(...data.map(d=>d.count), 1);
                 const W = 100/data.length;
                 return (
@@ -1121,7 +1121,7 @@ function Dashboard({ session, profile, onLogout }) {
                     <div style={{display:"flex",alignItems:"flex-end",gap:4,height,minWidth:data.length*44}}>
                       {data.map((d,i)=>(
                         <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:36}}>
-                          <span style={{fontSize:10,color:"#64748b",fontWeight:600}}>{d.count}</span>
+                          <span style={{fontSize:10,color:"#8A7678",fontWeight:600}}>{d.count}</span>
                           <div style={{width:"100%",height:Math.max((d.count/max)*(height-28),4),background:color,borderRadius:"4px 4px 0 0",opacity:0.85,transition:"height 0.3s"}}/>
                           <span style={{fontSize:9,color:"#475569",textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:40}}>{d.label}</span>
                         </div>
@@ -1133,18 +1133,18 @@ function Dashboard({ session, profile, onLogout }) {
 
               function KpiCard({ label, value, sub, accent }) {
                 return (
-                  <div style={{background:"#0d1b3e",border:"1px solid rgba(201,168,76,0.1)",borderRadius:12,padding:"18px 20px",flex:"1 1 140px",minWidth:130}}>
-                    <div style={{fontSize:28,fontWeight:800,color:accent||"#e2e8f0",letterSpacing:"-0.03em"}}>{value}</div>
-                    <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{label}</div>
-                    {sub&&<div style={{fontSize:11,color:"#334155",marginTop:4}}>{sub}</div>}
+                  <div style={{background:"#2C1F22",border:"1px solid rgba(181,140,145,0.1)",borderRadius:12,padding:"18px 20px",flex:"1 1 140px",minWidth:130}}>
+                    <div style={{fontSize:28,fontWeight:800,color:accent||"#F2EEE7",letterSpacing:"-0.03em"}}>{value}</div>
+                    <div style={{fontSize:12,color:"#8A7678",marginTop:2}}>{label}</div>
+                    {sub&&<div style={{fontSize:11,color:"#A79A8D",marginTop:4}}>{sub}</div>}
                   </div>
                 );
               }
 
               function ChartCard({ title, children }) {
                 return (
-                  <div style={{background:"#0d1b3e",border:"1px solid rgba(201,168,76,0.08)",borderRadius:12,padding:"18px 20px"}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>{title}</div>
+                  <div style={{background:"#2C1F22",border:"1px solid rgba(181,140,145,0.08)",borderRadius:12,padding:"18px 20px"}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#C8BFB0",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>{title}</div>
                     {children}
                   </div>
                 );
@@ -1162,27 +1162,27 @@ function Dashboard({ session, profile, onLogout }) {
 
                   {/* KPI row */}
                   <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>
-                    <KpiCard label="Total Leads"      value={totalLeads}       accent="#e2e8f0" />
-                    <KpiCard label="Converted"        value={convertedLeads}   accent="#c9a84c" sub={`${convRate}% conversion rate`} />
-                    <KpiCard label="Avg Lead Score"   value={avgScore}         accent="#60a5fa" sub="out of 100" />
-                    <KpiCard label="Pending Approval" value={stats.pending}    accent={stats.pending>0?"#f97316":"#e2e8f0"} />
-                    <KpiCard label="Aging 7d+"        value={agingCount}       accent={agingCount>0?"#ef4444":"#e2e8f0"} />
+                    <KpiCard label="Total Leads"      value={totalLeads}       accent="#F2EEE7" />
+                    <KpiCard label="Converted"        value={convertedLeads}   accent="#B58C91" sub={`${convRate}% conversion rate`} />
+                    <KpiCard label="Avg Lead Score"   value={avgScore}         accent="#C8BFB0" sub="out of 100" />
+                    <KpiCard label="Pending Approval" value={stats.pending}    accent={stats.pending>0?"#9B4A58":"#F2EEE7"} />
+                    <KpiCard label="Aging 7d+"        value={agingCount}       accent={agingCount>0?"#C04040":"#F2EEE7"} />
                   </div>
 
                   {/* Charts row 1 */}
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
                     <ChartCard title="Leads by Month (last 6)">
-                      <BarChart data={months} color="#c9a84c" height={130} />
+                      <BarChart data={months} color="#B58C91" height={130} />
                     </ChartCard>
                     <ChartCard title="Leads by Status">
-                      <BarChart data={byStatus} color="#60a5fa" height={130} />
+                      <BarChart data={byStatus} color="#C8BFB0" height={130} />
                     </ChartCard>
                   </div>
 
                   {/* Charts row 2 */}
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
                     <ChartCard title="Top Business Types">
-                      {byBtype.length ? <BarChart data={byBtype} color="#a78bfa" height={130} /> : <div style={{color:"#334155",fontSize:12}}>No data yet</div>}
+                      {byBtype.length ? <BarChart data={byBtype} color="#a78bfa" height={130} /> : <div style={{color:"#A79A8D",fontSize:12}}>No data yet</div>}
                     </ChartCard>
                     <ChartCard title="Leads by Tier">
                       <BarChart data={byTier} color="#34d399" height={130} />
@@ -1209,16 +1209,16 @@ function Dashboard({ session, profile, onLogout }) {
                               const convPct  = aLeads.length>0 ? ((aConv/aLeads.length)*100).toFixed(0) : 0;
                               return (
                                 <tr key={m.id} style={{borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
-                                  <td style={{padding:"9px 10px",color:"#e2e8f0",fontWeight:500}}>{m.name}</td>
-                                  <td style={{padding:"9px 10px",color:"#94a3b8"}}>{aLeads.length}</td>
-                                  <td style={{padding:"9px 10px",color:"#60a5fa"}}>{aCont}</td>
-                                  <td style={{padding:"9px 10px",color:"#c9a84c",fontWeight:600}}>{aConv}</td>
+                                  <td style={{padding:"9px 10px",color:"#F2EEE7",fontWeight:500}}>{m.name}</td>
+                                  <td style={{padding:"9px 10px",color:"#C8BFB0"}}>{aLeads.length}</td>
+                                  <td style={{padding:"9px 10px",color:"#C8BFB0"}}>{aCont}</td>
+                                  <td style={{padding:"9px 10px",color:"#B58C91",fontWeight:600}}>{aConv}</td>
                                   <td style={{padding:"9px 10px"}}>
                                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                                       <div style={{flex:1,height:5,background:"rgba(255,255,255,0.05)",borderRadius:3,maxWidth:80}}>
-                                        <div style={{height:"100%",width:`${convPct}%`,background:"#c9a84c",borderRadius:3}}/>
+                                        <div style={{height:"100%",width:`${convPct}%`,background:"#B58C91",borderRadius:3}}/>
                                       </div>
-                                      <span style={{fontSize:11,color:"#64748b",minWidth:28}}>{convPct}%</span>
+                                      <span style={{fontSize:11,color:"#8A7678",minWidth:28}}>{convPct}%</span>
                                     </div>
                                   </td>
                                 </tr>
@@ -1284,7 +1284,7 @@ function Dashboard({ session, profile, onLogout }) {
                     <div style={{display:"flex",gap:8}}>
                       <button className="btn" disabled={refreshing} onClick={handleRefresh}>{refreshing?"…":"↻ Refresh"}</button>
                       {dupGroups.length>0 && (
-                        <button className="btn btn-danger" style={{background:"rgba(239,68,68,0.1)",borderColor:"rgba(239,68,68,0.3)",color:"#ef4444"}} disabled={deduping} onClick={deleteAllDuplicates}>
+                        <button className="btn btn-danger" style={{background:"rgba(192,64,64,0.1)",borderColor:"rgba(192,64,64,0.3)",color:"#C04040"}} disabled={deduping} onClick={deleteAllDuplicates}>
                           {deduping?"Removing…":"⊗ Remove All Duplicates"}
                         </button>
                       )}
@@ -1292,9 +1292,9 @@ function Dashboard({ session, profile, onLogout }) {
                   </div>
 
                   {dupGroups.length === 0 ? (
-                    <div style={{textAlign:"center",padding:"60px 0",color:"#334155",fontSize:14}}>
+                    <div style={{textAlign:"center",padding:"60px 0",color:"#A79A8D",fontSize:14}}>
                       <div style={{fontSize:32,marginBottom:12}}>✓</div>
-                      <div style={{fontWeight:600,color:"#64748b"}}>No duplicates found</div>
+                      <div style={{fontWeight:600,color:"#8A7678"}}>No duplicates found</div>
                       <div style={{fontSize:12,marginTop:4}}>All leads have unique name + location combinations</div>
                     </div>
                   ) : (
@@ -1303,23 +1303,23 @@ function Dashboard({ session, profile, onLogout }) {
                         const sorted = [...group].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
                         const keep = sorted[0];
                         return (
-                          <div key={gi} style={{background:"#0d1b3e",border:"1px solid rgba(239,68,68,0.2)",borderRadius:12,padding:"14px 16px"}}>
+                          <div key={gi} style={{background:"#2C1F22",border:"1px solid rgba(192,64,64,0.2)",borderRadius:12,padding:"14px 16px"}}>
                             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
                               <div>
-                                <span style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{keep.name}</span>
+                                <span style={{fontWeight:700,fontSize:14,color:"#F2EEE7"}}>{keep.name}</span>
                                 <span style={{fontSize:12,color:"#475569",marginLeft:8}}>{keep.location}</span>
-                                <span style={{marginLeft:8,fontSize:11,background:"rgba(239,68,68,0.12)",color:"#ef4444",borderRadius:99,padding:"2px 8px",fontWeight:600}}>{group.length} copies</span>
+                                <span style={{marginLeft:8,fontSize:11,background:"rgba(192,64,64,0.12)",color:"#C04040",borderRadius:99,padding:"2px 8px",fontWeight:600}}>{group.length} copies</span>
                               </div>
-                              <button className="btn btn-danger" style={{fontSize:11,padding:"5px 12px",background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.25)",color:"#ef4444"}} onClick={()=>deleteDuplicates(group)}>
+                              <button className="btn btn-danger" style={{fontSize:11,padding:"5px 12px",background:"rgba(192,64,64,0.08)",borderColor:"rgba(192,64,64,0.25)",color:"#C04040"}} onClick={()=>deleteDuplicates(group)}>
                                 Keep oldest · delete {group.length-1}
                               </button>
                             </div>
                             <div style={{display:"flex",flexDirection:"column",gap:4}}>
                               {sorted.map((l,i) => (
-                                <div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 10px",borderRadius:7,background:i===0?"rgba(52,211,153,0.06)":"rgba(239,68,68,0.04)",border:`1px solid ${i===0?"rgba(52,211,153,0.15)":"rgba(239,68,68,0.1)"}`}}>
-                                  <span style={{fontSize:10,fontWeight:700,color:i===0?"#34d399":"#ef4444",minWidth:36}}>{i===0?"KEEP":"DEL"}</span>
-                                  <span style={{fontSize:12,color:"#94a3b8",flex:1}}>{l.business_type||"—"} · Score {l.score} · {l.status}</span>
-                                  <span style={{fontSize:11,color:"#334155"}}>{l.created_at?.slice(0,10)}</span>
+                                <div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 10px",borderRadius:7,background:i===0?"rgba(52,211,153,0.06)":"rgba(192,64,64,0.04)",border:`1px solid ${i===0?"rgba(52,211,153,0.15)":"rgba(192,64,64,0.1)"}`}}>
+                                  <span style={{fontSize:10,fontWeight:700,color:i===0?"#34d399":"#C04040",minWidth:36}}>{i===0?"KEEP":"DEL"}</span>
+                                  <span style={{fontSize:12,color:"#C8BFB0",flex:1}}>{l.business_type||"—"} · Score {l.score} · {l.status}</span>
+                                  <span style={{fontSize:11,color:"#A79A8D"}}>{l.created_at?.slice(0,10)}</span>
                                 </div>
                               ))}
                             </div>
@@ -1336,10 +1336,10 @@ function Dashboard({ session, profile, onLogout }) {
             {activePage === "pipeline" && (() => {
               const COLS = [
                 { status:"New",        label:"New",        color:"#475569", bg:"rgba(71,85,105,0.08)" },
-                { status:"Assigned",   label:"Assigned",   color:"#94a3b8", bg:"rgba(148,163,184,0.08)" },
-                { status:"Contacted",  label:"Contacted",  color:"#60a5fa", bg:"rgba(96,165,250,0.08)" },
+                { status:"Assigned",   label:"Assigned",   color:"#C8BFB0", bg:"rgba(148,163,184,0.08)" },
+                { status:"Contacted",  label:"Contacted",  color:"#C8BFB0", bg:"rgba(255,255,255,0.03)" },
                 { status:"In Progress",label:"In Progress",color:"#a78bfa", bg:"rgba(167,139,250,0.08)" },
-                { status:"Converted",  label:"Converted",  color:"#c9a84c", bg:"rgba(201,168,76,0.08)" },
+                { status:"Converted",  label:"Converted",  color:"#B58C91", bg:"rgba(181,140,145,0.08)" },
               ];
               return (
                 <div>
@@ -1369,7 +1369,7 @@ function Dashboard({ session, profile, onLogout }) {
                           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
                             <span style={{width:8,height:8,borderRadius:"50%",background:col.color,flexShrink:0,display:"inline-block"}}/>
                             <span style={{fontWeight:700,fontSize:12,color:col.color,textTransform:"uppercase",letterSpacing:"0.08em"}}>{col.label}</span>
-                            <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.06)",borderRadius:99,padding:"1px 8px",fontSize:11,color:"#64748b",fontWeight:600}}>{colLeads.length}</span>
+                            <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.06)",borderRadius:99,padding:"1px 8px",fontSize:11,color:"#8A7678",fontWeight:600}}>{colLeads.length}</span>
                           </div>
                           {/* Cards */}
                           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1380,23 +1380,23 @@ function Dashboard({ session, profile, onLogout }) {
                                 onDragEnd={()=>{ setDragLeadId(null); setDragOverCol(null); }}
                                 onClick={()=>openLead(lead)}
                                 style={{
-                                  background:"#0d1b3e", border:"1px solid rgba(201,168,76,0.08)",
+                                  background:"#2C1F22", border:"1px solid rgba(181,140,145,0.08)",
                                   borderRadius:9, padding:"10px 12px", cursor:"grab",
                                   opacity: dragLeadId===lead.id ? 0.4 : 1,
                                   transition:"opacity 0.15s",
                                   boxShadow:"0 1px 4px rgba(0,0,0,0.3)",
                                 }}>
-                                <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0",marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{lead.name}</div>
+                                <div style={{fontWeight:600,fontSize:13,color:"#F2EEE7",marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{lead.name}</div>
                                 <div style={{fontSize:11,color:"#475569",marginBottom:6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{lead.business_type||"—"} · {lead.location||"—"}</div>
                                 <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                                   <span style={{fontSize:10,fontWeight:600,padding:"2px 6px",borderRadius:5,...tierColor(lead.tier)}}>{lead.tier}</span>
-                                  <span style={{fontSize:10,color:"#64748b",marginLeft:"auto"}}>⭐ {lead.score}</span>
+                                  <span style={{fontSize:10,color:"#8A7678",marginLeft:"auto"}}>⭐ {lead.score}</span>
                                 </div>
-                                {lead.agent && <div style={{fontSize:10,color:"#334155",marginTop:5}}>👤 {lead.agent}</div>}
+                                {lead.agent && <div style={{fontSize:10,color:"#A79A8D",marginTop:5}}>👤 {lead.agent}</div>}
                               </div>
                             ))}
                             {colLeads.length===0 && (
-                              <div style={{textAlign:"center",padding:"24px 0",fontSize:11,color:"#1e3a5f"}}>Drop leads here</div>
+                              <div style={{textAlign:"center",padding:"24px 0",fontSize:11,color:"#6B5558"}}>Drop leads here</div>
                             )}
                           </div>
                         </div>
@@ -1421,7 +1421,7 @@ function Dashboard({ session, profile, onLogout }) {
                       <div className="page-sub">{bmList.length} branch manager{bmList.length!==1?"s":""} · {agentList.length} agent{agentList.length!==1?"s":""} · {leads.length} total leads</div>
                     </div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      {stats.pending>0&&<button className="btn" style={{borderColor:"rgba(249,115,22,0.3)",color:"#f97316"}} onClick={()=>setShowApprovals(true)}>⏳ {stats.pending} Pending</button>}
+                      {stats.pending>0&&<button className="btn" style={{borderColor:"rgba(155,74,88,0.3)",color:"#9B4A58"}} onClick={()=>setShowApprovals(true)}>⏳ {stats.pending} Pending</button>}
                       <button className="btn" disabled={refreshing} onClick={async()=>{setRefreshing(true);await fetchLeads();await fetchTeamMembers();setRefreshing(false);}}>{refreshing?"…":"↻"}</button>
                       <button className="btn" onClick={()=>setShowUserMgr(true)}>+ Add Member</button>
                     </div>
@@ -1430,31 +1430,31 @@ function Dashboard({ session, profile, onLogout }) {
                   <div className="stat-grid" style={{marginBottom:20}}>
                     <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"All Leads",leads})}><div className="stat-num">{leads.length}</div><div className="stat-lbl">Total Leads</div></div>
                     <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Converted Leads",leads:leads.filter(l=>l.status==="Converted")})}><div className="stat-num stat-accent">{stats.converted}</div><div className="stat-lbl">Converted</div></div>
-                    <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Pending Approval",leads:leads.filter(l=>l.status==="Pending Approval")})}><div className="stat-num" style={{color:"#f97316"}}>{stats.pending}</div><div className="stat-lbl">Pending Approval</div></div>
+                    <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Pending Approval",leads:leads.filter(l=>l.status==="Pending Approval")})}><div className="stat-num" style={{color:"#9B4A58"}}>{stats.pending}</div><div className="stat-lbl">Pending Approval</div></div>
                     <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Active Agents",leads:null,members:agentList})}><div className="stat-num">{agentList.length}</div><div className="stat-lbl">Active Agents</div></div>
                     <div className="stat-card" style={{cursor:"pointer"}} onClick={()=>setOverviewDrill({title:"Branch Managers",leads:null,members:bmList})}><div className="stat-num">{bmList.length}</div><div className="stat-lbl">Branch Managers</div></div>
                     <div className="stat-card"><div className="stat-num">{leads.length>0?Math.round(stats.converted/leads.length*100):0}%</div><div className="stat-lbl">Conversion Rate</div></div>
                   </div>
                   {/* Per-BM cards */}
-                  <div style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Branch Managers</div>
+                  <div style={{fontSize:11,fontWeight:700,color:"#A79A8D",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Branch Managers</div>
                   <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24}}>
-                    {bmList.length===0&&<div style={{fontSize:13,color:"#334155",padding:"16px 0"}}>No branch managers yet — add one via Team.</div>}
+                    {bmList.length===0&&<div style={{fontSize:13,color:"#A79A8D",padding:"16px 0"}}>No branch managers yet — add one via Team.</div>}
                     {bmList.map(bm=>{
                       const bmAgents = teamMembers.filter(m=>m.role==="agent"&&m.branch===bm.branch);
                       const bmLeads = leads.filter(l=>l.branch===bm.branch||bmAgents.some(a=>a.name===l.agent));
                       const bmConverted = bmLeads.filter(l=>l.status==="Converted").length;
                       const bmPending = bmLeads.filter(l=>l.status==="Pending Approval").length;
                       return (
-                        <div key={bm.id} style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:"14px 16px"}}>
+                        <div key={bm.id} style={{background:"#1C1416",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:"14px 16px"}}>
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                             <div>
-                              <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{bm.name}</div>
-                              <div style={{fontSize:11,color:"#334155",marginTop:2}}>{bm.branch||"No branch"} · {bmAgents.length} agent{bmAgents.length!==1?"s":""}</div>
+                              <div style={{fontWeight:700,fontSize:14,color:"#F2EEE7"}}>{bm.name}</div>
+                              <div style={{fontSize:11,color:"#A79A8D",marginTop:2}}>{bm.branch||"No branch"} · {bmAgents.length} agent{bmAgents.length!==1?"s":""}</div>
                             </div>
                             <div style={{display:"flex",gap:16}}>
-                              <div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — All Leads`,leads:bmLeads})}><div style={{fontSize:18,fontWeight:700,color:"#e2e8f0"}}>{bmLeads.length}</div><div style={{fontSize:10,color:"#334155"}}>Leads</div></div>
-                              <div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — Converted`,leads:bmLeads.filter(l=>l.status==="Converted")})}><div style={{fontSize:18,fontWeight:700,color:"#c9a84c"}}>{bmConverted}</div><div style={{fontSize:10,color:"#334155"}}>Converted</div></div>
-                              {bmPending>0&&<div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — Pending`,leads:bmLeads.filter(l=>l.status==="Pending Approval")})}><div style={{fontSize:18,fontWeight:700,color:"#f97316"}}>{bmPending}</div><div style={{fontSize:10,color:"#334155"}}>Pending</div></div>}
+                              <div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — All Leads`,leads:bmLeads})}><div style={{fontSize:18,fontWeight:700,color:"#F2EEE7"}}>{bmLeads.length}</div><div style={{fontSize:10,color:"#A79A8D"}}>Leads</div></div>
+                              <div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — Converted`,leads:bmLeads.filter(l=>l.status==="Converted")})}><div style={{fontSize:18,fontWeight:700,color:"#B58C91"}}>{bmConverted}</div><div style={{fontSize:10,color:"#A79A8D"}}>Converted</div></div>
+                              {bmPending>0&&<div style={{textAlign:"center",cursor:"pointer"}} onClick={()=>setOverviewDrill({title:`${bm.name} — Pending`,leads:bmLeads.filter(l=>l.status==="Pending Approval")})}><div style={{fontSize:18,fontWeight:700,color:"#9B4A58"}}>{bmPending}</div><div style={{fontSize:10,color:"#A79A8D"}}>Pending</div></div>}
                             </div>
                           </div>
                           {bmAgents.length>0&&(
@@ -1463,8 +1463,8 @@ function Dashboard({ session, profile, onLogout }) {
                                 const aLeads=leads.filter(l=>l.agent===a.name).length;
                                 const aConv=leads.filter(l=>l.agent===a.name&&l.status==="Converted").length;
                                 return <div key={a.id} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:6,padding:"6px 10px",fontSize:11}}>
-                                  <span style={{color:"#94a3b8",fontWeight:600}}>{a.name}</span>
-                                  <span style={{color:"#334155",marginLeft:6}}>{aLeads} leads · {aConv} converted</span>
+                                  <span style={{color:"#C8BFB0",fontWeight:600}}>{a.name}</span>
+                                  <span style={{color:"#A79A8D",marginLeft:6}}>{aLeads} leads · {aConv} converted</span>
                                 </div>;
                               })}
                             </div>
@@ -1476,10 +1476,10 @@ function Dashboard({ session, profile, onLogout }) {
                   {/* Unassigned agents */}
                   {agentList.filter(a=>!a.branch).length>0&&(
                     <>
-                      <div style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Unassigned Agents</div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#A79A8D",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Unassigned Agents</div>
                       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>
                         {agentList.filter(a=>!a.branch).map(a=>(
-                          <div key={a.id} style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.15)",borderRadius:6,padding:"6px 12px",fontSize:12,color:"#ef4444"}}>{a.name} — no branch</div>
+                          <div key={a.id} style={{background:"rgba(192,64,64,0.06)",border:"1px solid rgba(192,64,64,0.15)",borderRadius:6,padding:"6px 12px",fontSize:12,color:"#C04040"}}>{a.name} — no branch</div>
                         ))}
                       </div>
                     </>
@@ -1497,8 +1497,8 @@ function Dashboard({ session, profile, onLogout }) {
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {isBM && stats.pending>0 && (
-                  <button className="btn" style={{borderColor:"rgba(249,115,22,0.3)",color:"#f97316"}} onClick={()=>setShowApprovals(true)}>
-                    ⏳ Approvals <span style={{background:"#f97316",color:"#fff",borderRadius:99,padding:"1px 7px",fontSize:10,marginLeft:4}}>{stats.pending}</span>
+                  <button className="btn" style={{borderColor:"rgba(155,74,88,0.3)",color:"#9B4A58"}} onClick={()=>setShowApprovals(true)}>
+                    ⏳ Approvals <span style={{background:"#9B4A58",color:"#fff",borderRadius:99,padding:"1px 7px",fontSize:10,marginLeft:4}}>{stats.pending}</span>
                   </button>
                 )}
                 <button className="btn" onClick={exportCSV}>↓ Export</button>
@@ -1522,12 +1522,12 @@ function Dashboard({ session, profile, onLogout }) {
                 <div className="stat-lbl">Assigned</div>
               </div>
               <div className={`stat-card${statClick==="contacted"?" active":""}`} onClick={()=>handleStatClick("contacted")}>
-                <div className="stat-num" style={{color:"#60a5fa"}}>{stats.contacted}</div>
+                <div className="stat-num" style={{color:"#C8BFB0"}}>{stats.contacted}</div>
                 <div className="stat-lbl">Contacted</div>
               </div>
               {canSeeAll && (
                 <div className={`stat-card pending-card${statClick==="pending"?" active":""}`} onClick={()=>handleStatClick("pending")}>
-                  <div className="stat-num" style={stats.pending>0?{color:"#f97316"}:{}}>{stats.pending}</div>
+                  <div className="stat-num" style={stats.pending>0?{color:"#9B4A58"}:{}}>{stats.pending}</div>
                   <div className="stat-lbl">Pending Approval</div>
                 </div>
               )}
@@ -1536,7 +1536,7 @@ function Dashboard({ session, profile, onLogout }) {
                 <div className="stat-lbl">Converted</div>
               </div>
               <div className={`stat-card aging-card${statClick==="aging"?" active":""}`} onClick={()=>handleStatClick("aging")}>
-                <div className="stat-num" style={agingCount>0?{color:"#ef4444"}:{}}>{agingCount}</div>
+                <div className="stat-num" style={agingCount>0?{color:"#C04040"}:{}}>{agingCount}</div>
                 <div className="stat-lbl">Aging {AGING_DAYS}d+</div>
               </div>
             </div>
@@ -1602,7 +1602,7 @@ function Dashboard({ session, profile, onLogout }) {
                   <span className="table-title">Lead Database</span>
                   <span className="lead-badge">{filtered.length}</span>
                 </div>
-                <span style={{fontSize:11,color:"#1e3a5f"}}>Tap a row to view details</span>
+                <span style={{fontSize:11,color:"#6B5558"}}>Tap a row to view details</span>
               </div>
 
               {/* Desktop table */}
@@ -1629,10 +1629,10 @@ function Dashboard({ session, profile, onLogout }) {
                             <td style={{fontSize:11,whiteSpace:"nowrap"}}>{l.phone||"—"}</td>
                             <td style={{whiteSpace:"nowrap",fontSize:11}}>{l.location}</td>
                             <td><span className="pill" style={{background:tc.bg,color:tc.color}}>{l.tier}</span></td>
-                            <td><div className="score-wrap"><div className="score-bar"><div className="score-fill" style={{width:`${l.score}%`}}/></div><span style={{fontSize:11,color:"#334155",minWidth:22,textAlign:"right"}}>{l.score}</span></div></td>
+                            <td><div className="score-wrap"><div className="score-bar"><div className="score-fill" style={{width:`${l.score}%`}}/></div><span style={{fontSize:11,color:"#A79A8D",minWidth:22,textAlign:"right"}}>{l.score}</span></div></td>
                             <td style={{fontSize:11,whiteSpace:"nowrap",color:"#475569"}}>{l.business_type||"—"}</td>
                             <td><span className="status-pill" style={{background:statusBg(l.status),color:statusColor(l.status)}}>{l.status}</span></td>
-                            <td style={{fontSize:11,color:l.agent?"#64748b":"#1e3a5f",whiteSpace:"nowrap"}}>{l.agent||"—"}</td>
+                            <td style={{fontSize:11,color:l.agent?"#8A7678":"#6B5558",whiteSpace:"nowrap"}}>{l.agent||"—"}</td>
                           </tr>
                         );
                       })}
@@ -1665,9 +1665,9 @@ function Dashboard({ session, profile, onLogout }) {
                         <span className="pill" style={{background:tc.bg,color:tc.color}}>{l.tier}</span>
                         <div className="score-wrap" style={{maxWidth:100}}>
                           <div className="score-bar"><div className="score-fill" style={{width:`${l.score}%`}}/></div>
-                          <span style={{fontSize:11,color:"#334155"}}>{l.score}</span>
+                          <span style={{fontSize:11,color:"#A79A8D"}}>{l.score}</span>
                         </div>
-                        <span style={{fontSize:11,color:"#334155"}}>{l.agent||"Unassigned"}</span>
+                        <span style={{fontSize:11,color:"#A79A8D"}}>{l.agent||"Unassigned"}</span>
                       </div>
                     </div>
                   );
@@ -1681,7 +1681,7 @@ function Dashboard({ session, profile, onLogout }) {
                   {Array.from({length:Math.min(totalPages,7)},(_,i)=>(
                     <button key={i} className={`pg-btn${page===i+1?" pg-active":""}`} onClick={()=>setPage(i+1)}>{i+1}</button>
                   ))}
-                  {totalPages>7&&<span style={{color:"#1e3a5f",fontSize:11,padding:"0 4px"}}>…{totalPages}</span>}
+                  {totalPages>7&&<span style={{color:"#6B5558",fontSize:11,padding:"0 4px"}}>…{totalPages}</span>}
                   <button className="pg-btn" disabled={page===totalPages||totalPages===0} onClick={()=>setPage(p=>p+1)}>→</button>
                 </div>
               </div>
@@ -1701,7 +1701,7 @@ function Dashboard({ session, profile, onLogout }) {
             <div className="confirm-body">This action cannot be undone. These leads will be permanently removed from the database.</div>
             <div style={{display:"flex",gap:8}}>
               <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={()=>setConfirmDelete(false)}>Cancel</button>
-              <button className="btn btn-danger" style={{flex:1,justifyContent:"center",background:"rgba(239,68,68,0.1)"}} onClick={deleteSelected}>Delete</button>
+              <button className="btn btn-danger" style={{flex:1,justifyContent:"center",background:"rgba(192,64,64,0.1)"}} onClick={deleteSelected}>Delete</button>
             </div>
           </div>
         </div>
@@ -1714,7 +1714,7 @@ function Dashboard({ session, profile, onLogout }) {
           <div className="overlay" onClick={()=>{setSelected(null);setEditMode(false);}} />
           <div className="drawer">
             <div className="drawer-header">
-              <span style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em"}}>{editMode?"Edit Lead":"Lead Detail"}</span>
+              <span style={{fontSize:11,fontWeight:700,color:"#A79A8D",textTransform:"uppercase",letterSpacing:"0.08em"}}>{editMode?"Edit Lead":"Lead Detail"}</span>
               <button className="btn" style={{padding:"5px 10px"}} onClick={()=>{setSelected(null);setEditMode(false);}}>✕</button>
             </div>
             <div className="drawer-body">
@@ -1787,7 +1787,7 @@ function Dashboard({ session, profile, onLogout }) {
                       {/* BM can reassign between agents */}
                       {isBM&&(
                         <div>
-                          <div style={{fontSize:10,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Reassign Agent</div>
+                          <div style={{fontSize:10,fontWeight:700,color:"#A79A8D",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Reassign Agent</div>
                           <select className="form-select" value={assignAgent} onChange={e=>setAssignAgent(e.target.value)}>
                             <option value="">— Select agent —</option>
                             {teamMembers.filter(m=>m.role==="agent").map(m=><option key={m.id}>{m.name}</option>)}
@@ -1829,7 +1829,7 @@ function Dashboard({ session, profile, onLogout }) {
                   {detailTab==="comments"&&(
                     <>
                       <div className="comment-list">
-                        {comments.length===0&&<div style={{fontSize:12,color:"#1e3a5f",textAlign:"center",padding:"20px 0"}}>No notes yet</div>}
+                        {comments.length===0&&<div style={{fontSize:12,color:"#6B5558",textAlign:"center",padding:"20px 0"}}>No notes yet</div>}
                         {comments.map(c=>(
                           <div className="comment-item" key={c.id}>
                             <div className="comment-meta">{c.user_name} · {new Date(c.created_at).toLocaleDateString()}</div>
@@ -1848,11 +1848,11 @@ function Dashboard({ session, profile, onLogout }) {
 
                   {detailTab==="history"&&(
                     <div className="history-list">
-                      {leadHistory.length===0&&<div style={{fontSize:12,color:"#1e3a5f",textAlign:"center",padding:"20px 0"}}>No history yet</div>}
+                      {leadHistory.length===0&&<div style={{fontSize:12,color:"#6B5558",textAlign:"center",padding:"20px 0"}}>No history yet</div>}
                       {leadHistory.map(h=>(
                         <div className="history-item" key={h.id}>
-                          <span style={{color:"#64748b",fontWeight:600}}>{h.field_changed}</span>: <span style={{color:"#334155"}}>{h.old_value||"—"}</span> → <span style={{color:"#c9a84c"}}>{h.new_value||"—"}</span>
-                          <div style={{fontSize:10,color:"#1e3a5f",marginTop:3}}>{h.user_name} · {new Date(h.created_at).toLocaleDateString()}</div>
+                          <span style={{color:"#8A7678",fontWeight:600}}>{h.field_changed}</span>: <span style={{color:"#A79A8D"}}>{h.old_value||"—"}</span> → <span style={{color:"#B58C91"}}>{h.new_value||"—"}</span>
+                          <div style={{fontSize:10,color:"#6B5558",marginTop:3}}>{h.user_name} · {new Date(h.created_at).toLocaleDateString()}</div>
                         </div>
                       ))}
                     </div>
@@ -1861,12 +1861,12 @@ function Dashboard({ session, profile, onLogout }) {
                   {detailTab==="followups"&&(
                     <>
                       <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                        {followUps.length===0&&<div style={{fontSize:12,color:"#1e3a5f",textAlign:"center",padding:"12px 0"}}>No follow-ups set</div>}
+                        {followUps.length===0&&<div style={{fontSize:12,color:"#6B5558",textAlign:"center",padding:"12px 0"}}>No follow-ups set</div>}
                         {followUps.map(f=>(
                           <div key={f.id} className={`followup-item${f.done?" fu-done":""}${!f.done&&f.due_date<today?" overdue":""}`}>
                             <div style={{flex:1}}>
-                              <div style={{fontSize:12,color:f.done?"#334155":f.due_date<today?"#ef4444":"#94a3b8",fontWeight:600}}>{f.due_date}</div>
-                              {f.note&&<div style={{fontSize:11,color:"#334155",marginTop:2}}>{f.note}</div>}
+                              <div style={{fontSize:12,color:f.done?"#A79A8D":f.due_date<today?"#C04040":"#C8BFB0",fontWeight:600}}>{f.due_date}</div>
+                              {f.note&&<div style={{fontSize:11,color:"#A79A8D",marginTop:2}}>{f.note}</div>}
                             </div>
                             {!f.done&&!isAdmin&&<button className="btn" style={{padding:"4px 8px",fontSize:11}} onClick={()=>markFollowUpDone(f.id)}>Done</button>}
                           </div>
@@ -1900,20 +1900,20 @@ function Dashboard({ session, profile, onLogout }) {
               {overviewDrill.members ? (
                 // Members drilldown
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {overviewDrill.members.length===0&&<div style={{color:"#334155",fontSize:13,textAlign:"center",padding:"24px 0"}}>None yet</div>}
+                  {overviewDrill.members.length===0&&<div style={{color:"#A79A8D",fontSize:13,textAlign:"center",padding:"24px 0"}}>None yet</div>}
                   {overviewDrill.members.map(m=>{
                     const rc=roleColor(m.role);
                     const mLeads=leads.filter(l=>l.agent===m.name||l.branch===m.branch).length;
                     const mConverted=leads.filter(l=>(l.agent===m.name||l.branch===m.branch)&&l.status==="Converted").length;
                     return (
-                      <div key={m.id} style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:9,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                      <div key={m.id} style={{background:"#1C1416",border:"1px solid rgba(255,255,255,0.05)",borderRadius:9,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
                         <div style={{flex:1}}>
-                          <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>{m.name}</div>
-                          <div style={{fontSize:11,color:"#334155",marginTop:2}}>{m.branch||"No branch"} · Joined {new Date(m.created_at).toLocaleDateString()}</div>
+                          <div style={{fontWeight:600,fontSize:13,color:"#F2EEE7"}}>{m.name}</div>
+                          <div style={{fontSize:11,color:"#A79A8D",marginTop:2}}>{m.branch||"No branch"} · Joined {new Date(m.created_at).toLocaleDateString()}</div>
                         </div>
                         <span className="role-badge" style={{background:rc.bg,color:rc.color}}>{m.role.replace("_"," ")}</span>
-                        <div style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:700,color:"#e2e8f0"}}>{mLeads}</div><div style={{fontSize:10,color:"#334155"}}>Leads</div></div>
-                        <div style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:700,color:"#c9a84c"}}>{mConverted}</div><div style={{fontSize:10,color:"#334155"}}>Converted</div></div>
+                        <div style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:700,color:"#F2EEE7"}}>{mLeads}</div><div style={{fontSize:10,color:"#A79A8D"}}>Leads</div></div>
+                        <div style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:700,color:"#B58C91"}}>{mConverted}</div><div style={{fontSize:10,color:"#A79A8D"}}>Converted</div></div>
                       </div>
                     );
                   })}
@@ -1921,16 +1921,16 @@ function Dashboard({ session, profile, onLogout }) {
               ) : (
                 // Leads drilldown
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  {(overviewDrill.leads||[]).length===0&&<div style={{color:"#334155",fontSize:13,textAlign:"center",padding:"24px 0"}}>No leads</div>}
+                  {(overviewDrill.leads||[]).length===0&&<div style={{color:"#A79A8D",fontSize:13,textAlign:"center",padding:"24px 0"}}>No leads</div>}
                   {(overviewDrill.leads||[]).map(l=>(
-                    <div key={l.id} style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:8,padding:"10px 14px",cursor:"pointer"}} onClick={()=>{openLead(l);setOverviewDrill(null);}}>
+                    <div key={l.id} style={{background:"#1C1416",border:"1px solid rgba(255,255,255,0.05)",borderRadius:8,padding:"10px 14px",cursor:"pointer"}} onClick={()=>{openLead(l);setOverviewDrill(null);}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
                         <div>
-                          <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>{l.name}</div>
-                          <div style={{fontSize:11,color:"#334155",marginTop:2}}>{l.location} · {l.business_type||"—"}</div>
+                          <div style={{fontWeight:600,fontSize:13,color:"#F2EEE7"}}>{l.name}</div>
+                          <div style={{fontSize:11,color:"#A79A8D",marginTop:2}}>{l.location} · {l.business_type||"—"}</div>
                         </div>
                         <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                          {l.agent&&<span style={{fontSize:11,color:"#60a5fa"}}>{l.agent}</span>}
+                          {l.agent&&<span style={{fontSize:11,color:"#C8BFB0"}}>{l.agent}</span>}
                           <span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:4,background:`${statusColor(l.status)}18`,color:statusColor(l.status),border:`1px solid ${statusColor(l.status)}30`}}>{l.status}</span>
                         </div>
                       </div>
@@ -1959,22 +1959,22 @@ function Dashboard({ session, profile, onLogout }) {
                     <label className="form-label">States</label>
                     <button className="form-input" style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",textAlign:"left"}}
                       onClick={()=>setScrapeDropdown(d=>({...d,states:!d.states,types:false,keywords:false}))}>
-                      <span style={{color:scrapeConfig.cities.length?"#cbd5e1":"#1e3a5f"}}>
+                      <span style={{color:scrapeConfig.cities.length?"#DDD8D0":"#6B5558"}}>
                         {scrapeConfig.cities.length?`${scrapeConfig.cities.length} state${scrapeConfig.cities.length>1?"s":""} selected`:"Select states…"}
                       </span>
-                      <span style={{color:"#334155",fontSize:10}}>{scrapeDropdown.states?"▲":"▼"}</span>
+                      <span style={{color:"#A79A8D",fontSize:10}}>{scrapeDropdown.states?"▲":"▼"}</span>
                     </button>
                     {scrapeDropdown.states&&(
-                      <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#0d1b3e",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:220,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+                      <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#2C1F22",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:220,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
                         <div style={{padding:"8px 10px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",gap:8}}>
-                          <button style={{fontSize:11,color:"#c9a84c",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,cities:[...NIGERIAN_STATES]}))}>All</button>
+                          <button style={{fontSize:11,color:"#B58C91",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,cities:[...NIGERIAN_STATES]}))}>All</button>
                           <button style={{fontSize:11,color:"#475569",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,cities:[]}))}>None</button>
                         </div>
                         {NIGERIAN_STATES.map(s=>{
                           const on=scrapeConfig.cities.includes(s);
-                          return <label key={s} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",background:on?"rgba(201,168,76,0.05)":"transparent",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
-                            <input type="checkbox" checked={on} onChange={()=>setScrapeConfig(c=>({...c,cities:on?c.cities.filter(x=>x!==s):[...c.cities,s]}))} style={{accentColor:"#c9a84c"}} />
-                            <span style={{fontSize:13,color:on?"#c9a84c":"#94a3b8"}}>{s}</span>
+                          return <label key={s} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",background:on?"rgba(181,140,145,0.05)":"transparent",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                            <input type="checkbox" checked={on} onChange={()=>setScrapeConfig(c=>({...c,cities:on?c.cities.filter(x=>x!==s):[...c.cities,s]}))} style={{accentColor:"#B58C91"}} />
+                            <span style={{fontSize:13,color:on?"#B58C91":"#C8BFB0"}}>{s}</span>
                           </label>;
                         })}
                       </div>
@@ -1986,27 +1986,27 @@ function Dashboard({ session, profile, onLogout }) {
                     <label className="form-label">Business Types</label>
                     <button className="form-input" style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",textAlign:"left"}}
                       onClick={()=>setScrapeDropdown(d=>({...d,types:!d.types,states:false,keywords:false}))}>
-                      <span style={{color:scrapeConfig.business_types.length?"#cbd5e1":"#1e3a5f"}}>
+                      <span style={{color:scrapeConfig.business_types.length?"#DDD8D0":"#6B5558"}}>
                         {scrapeConfig.business_types.length?`${scrapeConfig.business_types.length} type${scrapeConfig.business_types.length>1?"s":""} selected`:"Select business types…"}
                       </span>
-                      <span style={{color:"#334155",fontSize:10}}>{scrapeDropdown.types?"▲":"▼"}</span>
+                      <span style={{color:"#A79A8D",fontSize:10}}>{scrapeDropdown.types?"▲":"▼"}</span>
                     </button>
                     {scrapeDropdown.types&&(
-                      <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#0d1b3e",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:220,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+                      <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#2C1F22",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:220,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
                         <div style={{padding:"8px 10px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",gap:8}}>
-                          <button style={{fontSize:11,color:"#c9a84c",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,business_types:[...BUSINESS_TYPES],keywords_map:{}}))}>All</button>
+                          <button style={{fontSize:11,color:"#B58C91",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,business_types:[...BUSINESS_TYPES],keywords_map:{}}))}>All</button>
                           <button style={{fontSize:11,color:"#475569",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setScrapeConfig(c=>({...c,business_types:[],keywords_map:{}}))}>None</button>
                         </div>
                         {BUSINESS_TYPES.map(b=>{
                           const on=scrapeConfig.business_types.includes(b);
-                          return <label key={b} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",background:on?"rgba(201,168,76,0.05)":"transparent",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                          return <label key={b} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",background:on?"rgba(181,140,145,0.05)":"transparent",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
                             <input type="checkbox" checked={on} onChange={()=>setScrapeConfig(c=>{
                               const newTypes=on?c.business_types.filter(x=>x!==b):[...c.business_types,b];
                               const newKwMap={...c.keywords_map};
                               if(on)delete newKwMap[b];
                               return {...c,business_types:newTypes,keywords_map:newKwMap};
-                            })} style={{accentColor:"#c9a84c"}} />
-                            <span style={{fontSize:13,color:on?"#c9a84c":"#94a3b8"}}>{b}</span>
+                            })} style={{accentColor:"#B58C91"}} />
+                            <span style={{fontSize:13,color:on?"#B58C91":"#C8BFB0"}}>{b}</span>
                           </label>;
                         })}
                       </div>
@@ -2016,30 +2016,30 @@ function Dashboard({ session, profile, onLogout }) {
                   {/* KEYWORDS DROPDOWN — only if business types selected */}
                   {scrapeConfig.business_types.length>0&&(
                     <div className="form-group" style={{position:"relative"}}>
-                      <label className="form-label">Keywords <span style={{color:"#334155",fontWeight:400}}>(choose which search terms to use)</span></label>
+                      <label className="form-label">Keywords <span style={{color:"#A79A8D",fontWeight:400}}>(choose which search terms to use)</span></label>
                       <button className="form-input" style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",textAlign:"left"}}
                         onClick={()=>setScrapeDropdown(d=>({...d,keywords:!d.keywords,states:false,types:false}))}>
-                        <span style={{color:"#cbd5e1"}}>
+                        <span style={{color:"#DDD8D0"}}>
                           {Object.values(scrapeConfig.keywords_map).flat().length} keyword{Object.values(scrapeConfig.keywords_map).flat().length!==1?"s":""} selected
                         </span>
-                        <span style={{color:"#334155",fontSize:10}}>{scrapeDropdown.keywords?"▲":"▼"}</span>
+                        <span style={{color:"#A79A8D",fontSize:10}}>{scrapeDropdown.keywords?"▲":"▼"}</span>
                       </button>
                       {scrapeDropdown.keywords&&(
-                        <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#0d1b3e",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:280,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)",padding:12,display:"flex",flexDirection:"column",gap:12}}>
+                        <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:50,background:"#2C1F22",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,marginTop:4,maxHeight:280,overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.5)",padding:12,display:"flex",flexDirection:"column",gap:12}}>
                           {scrapeConfig.business_types.map(btype=>{
                             const allKws=BUSINESS_KEYWORDS[btype]||[btype];
                             const selectedKws=scrapeConfig.keywords_map?.[btype]||[];
                             return (
                               <div key={btype}>
-                                <div style={{fontSize:10,color:"#64748b",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.08em",display:"flex",justifyContent:"space-between"}}>
+                                <div style={{fontSize:10,color:"#8A7678",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.08em",display:"flex",justifyContent:"space-between"}}>
                                   {btype}
-                                  <button style={{fontSize:10,color:"#c9a84c",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textTransform:"none"}}
+                                  <button style={{fontSize:10,color:"#B58C91",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textTransform:"none"}}
                                     onClick={()=>setScrapeConfig(c=>({...c,keywords_map:{...c.keywords_map,[btype]:allKws}}))}>Select all</button>
                                 </div>
                                 <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                                   {allKws.map(kw=>{
                                     const on=selectedKws.includes(kw);
-                                    return <button key={kw} className="kw-pill" style={{background:on?"rgba(201,168,76,0.1)":"transparent",borderColor:on?"rgba(201,168,76,0.3)":"rgba(255,255,255,0.06)",color:on?"#c9a84c":"#334155"}}
+                                    return <button key={kw} className="kw-pill" style={{background:on?"rgba(181,140,145,0.1)":"transparent",borderColor:on?"rgba(181,140,145,0.3)":"rgba(255,255,255,0.06)",color:on?"#B58C91":"#A79A8D"}}
                                       onClick={()=>setScrapeConfig(c=>{
                                         const cur=c.keywords_map?.[btype]||[];
                                         const updated=on?cur.filter(k=>k!==kw):[...cur,kw];
@@ -2071,13 +2071,13 @@ function Dashboard({ session, profile, onLogout }) {
                   </div>
                 </>
               ):(
-                <div style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:12,padding:20,display:"flex",flexDirection:"column",gap:14}}>
+                <div style={{background:"#1C1416",border:"1px solid rgba(255,255,255,0.05)",borderRadius:12,padding:20,display:"flex",flexDirection:"column",gap:14}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontWeight:700,color:"#e2e8f0",fontSize:14}}>{scrapeStatus?.status==="done"?"Complete":"Scraping…"}</span>
-                    <span style={{fontSize:13,color:"#c9a84c",fontWeight:700}}>{scrapeStatus?.added??0} <span style={{color:"#334155",fontWeight:400}}>/ {scrapeConfig.max_total}</span></span>
+                    <span style={{fontWeight:700,color:"#F2EEE7",fontSize:14}}>{scrapeStatus?.status==="done"?"Complete":"Scraping…"}</span>
+                    <span style={{fontSize:13,color:"#B58C91",fontWeight:700}}>{scrapeStatus?.added??0} <span style={{color:"#A79A8D",fontWeight:400}}>/ {scrapeConfig.max_total}</span></span>
                   </div>
                   <div className="progress-wrap"><div className="progress-fill" style={{width:`${scrapeStatus?.progress??0}%`}}/></div>
-                  <div style={{fontSize:11,color:"#334155"}}>{scrapeStatus?.progress??0}% complete</div>
+                  <div style={{fontSize:11,color:"#A79A8D"}}>{scrapeStatus?.progress??0}% complete</div>
                   {scrapeStatus?.status!=="done"&&scrapeStatus?.status!=="cancelled"&&<button className="btn btn-danger" onClick={cancelScrape}>Stop Scraping</button>}
                   {(scrapeStatus?.status==="done"||scrapeStatus?.status==="cancelled")&&<button className="btn btn-gold" onClick={()=>{setScrapeJob(null);setScrapeStatus(null);setShowFindLeads(false);}}>Done</button>}
                 </div>
@@ -2159,8 +2159,8 @@ function Dashboard({ session, profile, onLogout }) {
               </div>
             </div>
             <div className="modal-body">
-              <div style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:16,display:"flex",flexDirection:"column",gap:12}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.08em"}}>Create New User</div>
+              <div style={{background:"#1C1416",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:16,display:"flex",flexDirection:"column",gap:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#8A7678",textTransform:"uppercase",letterSpacing:"0.08em"}}>Create New User</div>
                 <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">Full Name</label>
@@ -2195,17 +2195,17 @@ function Dashboard({ session, profile, onLogout }) {
                     </div>
                   ):null}
                 </div>
-                {userError&&<div style={{fontSize:12,color:"#ef4444",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.15)",borderRadius:7,padding:"9px 12px"}}>{userError}</div>}
-                {userSuccess&&<div style={{fontSize:12,color:"#c9a84c",background:"rgba(201,168,76,0.08)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:7,padding:"9px 12px"}}>{userSuccess}</div>}
+                {userError&&<div style={{fontSize:12,color:"#C04040",background:"rgba(192,64,64,0.08)",border:"1px solid rgba(192,64,64,0.15)",borderRadius:7,padding:"9px 12px"}}>{userError}</div>}
+                {userSuccess&&<div style={{fontSize:12,color:"#B58C91",background:"rgba(181,140,145,0.08)",border:"1px solid rgba(181,140,145,0.2)",borderRadius:7,padding:"9px 12px"}}>{userSuccess}</div>}
                 <button className="btn btn-gold" onClick={createUser} disabled={creatingUser}>{creatingUser?"Creating…":"Create User"}</button>
               </div>
-              <div style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em"}}>Team Members ({teamMembers.length})</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#A79A8D",textTransform:"uppercase",letterSpacing:"0.08em"}}>Team Members ({teamMembers.length})</div>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {teamMembers.map(m=>{
                   const isEditing = editingMember?.id === m.id;
                   const rc = roleColor(m.role);
                   return (
-                    <div key={m.id} style={{background:"#060d1f",border:`1px solid ${isEditing?"rgba(201,168,76,0.3)":"rgba(255,255,255,0.05)"}`,borderRadius:9,padding:"12px 14px"}}>
+                    <div key={m.id} style={{background:"#1C1416",border:`1px solid ${isEditing?"rgba(181,140,145,0.3)":"rgba(255,255,255,0.05)"}`,borderRadius:9,padding:"12px 14px"}}>
                       {isEditing ? (
                         <div style={{display:"flex",flexDirection:"column",gap:8}}>
                           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
@@ -2220,13 +2220,13 @@ function Dashboard({ session, profile, onLogout }) {
                       ) : (
                         <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>{m.name}</div>
-                            <div style={{fontSize:11,color:"#334155",marginTop:2}}>{m.branch||"No branch"} · {new Date(m.created_at).toLocaleDateString()}</div>
+                            <div style={{fontWeight:600,fontSize:13,color:"#F2EEE7"}}>{m.name}</div>
+                            <div style={{fontSize:11,color:"#A79A8D",marginTop:2}}>{m.branch||"No branch"} · {new Date(m.created_at).toLocaleDateString()}</div>
                           </div>
                           <span className="role-badge" style={{background:rc.bg,color:rc.color,flexShrink:0}}>{m.role.replace("_"," ")}</span>
                           <button className="btn" style={{fontSize:11,padding:"4px 10px",flexShrink:0}} onClick={()=>setEditingMember({id:m.id,name:m.name,branch:m.branch||"",role:m.role})}>Edit</button>
                           {isAdmin && m.role !== "admin" && (
-                            <button className="btn btn-danger" style={{fontSize:11,padding:"4px 10px",flexShrink:0,background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.25)",color:"#ef4444"}} disabled={deletingMember===m.id} onClick={()=>deleteMember(m)}>{deletingMember===m.id?"…":"Delete"}</button>
+                            <button className="btn btn-danger" style={{fontSize:11,padding:"4px 10px",flexShrink:0,background:"rgba(192,64,64,0.08)",borderColor:"rgba(192,64,64,0.25)",color:"#C04040"}} disabled={deletingMember===m.id} onClick={()=>deleteMember(m)}>{deletingMember===m.id?"…":"Delete"}</button>
                           )}
                         </div>
                       )}
@@ -2244,25 +2244,25 @@ function Dashboard({ session, profile, onLogout }) {
         <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowApprovals(false)}>
           <div className="modal" style={{maxWidth:560}} onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
-              <span className="modal-title">Pending Approvals <span style={{fontSize:13,color:"#f97316"}}>({pendingApprovals.length})</span></span>
+              <span className="modal-title">Pending Approvals <span style={{fontSize:13,color:"#9B4A58"}}>({pendingApprovals.length})</span></span>
               <button className="btn" style={{padding:"5px 10px"}} onClick={()=>setShowApprovals(false)}>✕</button>
             </div>
             <div className="modal-body">
               {pendingApprovals.length===0?(
-                <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"32px 0"}}>No pending approvals</div>
+                <div style={{fontSize:13,color:"#A79A8D",textAlign:"center",padding:"32px 0"}}>No pending approvals</div>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {pendingApprovals.map(lead=>(
-                    <div key={lead.id} style={{background:"#060d1f",border:"1px solid rgba(249,115,22,0.15)",borderRadius:10,padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+                    <div key={lead.id} style={{background:"#1C1416",border:"1px solid rgba(155,74,88,0.15)",borderRadius:10,padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                         <div>
-                          <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{lead.name}</div>
-                          <div style={{fontSize:11,color:"#475569",marginTop:3}}>{lead.business_type||"—"} · {lead.location} · <span style={{color:"#64748b"}}>Agent: {lead.agent||"—"}</span></div>
+                          <div style={{fontSize:13,fontWeight:700,color:"#F2EEE7"}}>{lead.name}</div>
+                          <div style={{fontSize:11,color:"#475569",marginTop:3}}>{lead.business_type||"—"} · {lead.location} · <span style={{color:"#8A7678"}}>Agent: {lead.agent||"—"}</span></div>
                         </div>
-                        <span style={{fontSize:10,background:"rgba(249,115,22,0.1)",color:"#f97316",border:"1px solid rgba(249,115,22,0.2)",borderRadius:4,padding:"3px 8px",whiteSpace:"nowrap",fontWeight:700}}>PENDING</span>
+                        <span style={{fontSize:10,background:"rgba(155,74,88,0.1)",color:"#9B4A58",border:"1px solid rgba(155,74,88,0.2)",borderRadius:4,padding:"3px 8px",whiteSpace:"nowrap",fontWeight:700}}>PENDING</span>
                       </div>
                       <div style={{display:"flex",gap:7}}>
-                        <button className="btn btn-success" style={{flex:1,justifyContent:"center"}} onClick={()=>approveConversion(lead.id)}>✓ Approve</button>
+                        <button className="btn" style={{flex:1,justifyContent:"center"}} onClick={()=>approveConversion(lead.id)}>✓ Approve</button>
                         <button className="btn btn-danger" style={{flex:1,justifyContent:"center"}} onClick={()=>rejectConversion(lead.id)}>✕ Reject</button>
                         <button className="btn" style={{padding:"8px 12px"}} onClick={()=>{setShowApprovals(false);openLead(lead);}}>View</button>
                       </div>
@@ -2285,13 +2285,13 @@ function Dashboard({ session, profile, onLogout }) {
             </div>
             <div className="modal-body">
               {leaderboard.length===0?(
-                <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>No agents yet</div>
+                <div style={{fontSize:13,color:"#A79A8D",textAlign:"center",padding:"24px 0"}}>No agents yet</div>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {leaderboard.map((a,i)=>(
                     <div key={a.name} className="lb-row">
                       <div className={`lb-rank${i<3?" top":""}`}>#{i+1}</div>
-                      <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(201,168,76,0.1)",border:"1px solid rgba(201,168,76,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#c9a84c",flexShrink:0}}>{a.name[0].toUpperCase()}</div>
+                      <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(181,140,145,0.1)",border:"1px solid rgba(181,140,145,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#B58C91",flexShrink:0}}>{a.name[0].toUpperCase()}</div>
                       <div className="lb-name">{a.name}</div>
                       <div className="lb-stat">{a.assigned} assigned</div>
                       <div className="lb-converted">{a.converted}</div>
@@ -2299,7 +2299,7 @@ function Dashboard({ session, profile, onLogout }) {
                   ))}
                 </div>
               )}
-              <div style={{fontSize:11,color:"#1e3a5f",textAlign:"center"}}>Ranked by number of conversions</div>
+              <div style={{fontSize:11,color:"#6B5558",textAlign:"center"}}>Ranked by number of conversions</div>
             </div>
           </div>
         </div>
@@ -2316,8 +2316,8 @@ function Dashboard({ session, profile, onLogout }) {
             <div className="modal-body">
 
               {/* SET NEW TARGET */}
-              <div style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:16,marginBottom:16}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#334155",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12}}>Set Target</div>
+              <div style={{background:"#1C1416",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:16,marginBottom:16}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#A79A8D",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12}}>Set Target</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:8,alignItems:"end"}}>
                   {isAdmin&&(
                     <div>
@@ -2346,9 +2346,9 @@ function Dashboard({ session, profile, onLogout }) {
 
               {/* TARGETS LIST WITH PROGRESS */}
               {targetsLoading?(
-                <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>Loading…</div>
+                <div style={{fontSize:13,color:"#A79A8D",textAlign:"center",padding:"24px 0"}}>Loading…</div>
               ):targets.length===0?(
-                <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>No targets set for {currentMonth} yet.</div>
+                <div style={{fontSize:13,color:"#A79A8D",textAlign:"center",padding:"24px 0"}}>No targets set for {currentMonth} yet.</div>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
                   {targets.map(t=>{
@@ -2357,19 +2357,19 @@ function Dashboard({ session, profile, onLogout }) {
                       ? leads.filter(l=>l.agent===t.agent_name&&l.status==="Converted").length
                       : leads.filter(l=>(!t.branch||l.branch===t.branch)&&l.status==="Converted").length;
                     const pct = Math.min(Math.round((actual/t.target_count)*100),100);
-                    const color = pct>=100?"#22c55e":pct>=60?"#c9a84c":"#ef4444";
+                    const color = pct>=100?"#B58C91":pct>=60?"#B58C91":"#C04040";
                     return (
-                      <div key={t.id} style={{background:"#060d1f",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:14}}>
+                      <div key={t.id} style={{background:"#1C1416",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:14}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                           <div>
-                            <span style={{fontSize:13,fontWeight:700,color:"#cbd5e1"}}>{scope}</span>
+                            <span style={{fontSize:13,fontWeight:700,color:"#DDD8D0"}}>{scope}</span>
                             {t.agent_name&&<span style={{marginLeft:6,fontSize:10,color:"#475569",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:4,padding:"1px 6px"}}>agent</span>}
                             {!t.agent_name&&t.branch&&<span style={{marginLeft:6,fontSize:10,color:"#475569",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:4,padding:"1px 6px"}}>branch</span>}
                           </div>
                           <div style={{display:"flex",alignItems:"center",gap:10}}>
                             <span style={{fontSize:12,fontWeight:700,color}}>{actual}/{t.target_count}</span>
                             <span style={{fontSize:11,color,fontWeight:600}}>{pct}%</span>
-                            {isAdmin&&<button onClick={()=>deleteTarget(t.id)} style={{background:"none",border:"none",color:"#334155",fontSize:14,cursor:"pointer",padding:"0 2px"}} title="Remove">✕</button>}
+                            {isAdmin&&<button onClick={()=>deleteTarget(t.id)} style={{background:"none",border:"none",color:"#A79A8D",fontSize:14,cursor:"pointer",padding:"0 2px"}} title="Remove">✕</button>}
                           </div>
                         </div>
                         <div style={{height:6,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
@@ -2399,7 +2399,7 @@ function Dashboard({ session, profile, onLogout }) {
                 <input className="form-input" placeholder="Search by action, person, lead name…" value={auditSearch} onChange={e=>setAuditSearch(e.target.value)} style={{width:"100%"}} />
               </div>
               {auditLoading?(
-                <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>Loading…</div>
+                <div style={{fontSize:13,color:"#A79A8D",textAlign:"center",padding:"24px 0"}}>Loading…</div>
               ):(()=>{
                 const filtered = auditLogs.filter(log=>{
                   if(!auditSearch) return true;
@@ -2419,7 +2419,7 @@ function Dashboard({ session, profile, onLogout }) {
                   else{ groups.push({id:log.id,action:log.action,user_name:log.user_name,logs:[log]}); }
                 }
                 return filtered.length===0?(
-                  <div style={{fontSize:13,color:"#334155",textAlign:"center",padding:"24px 0"}}>
+                  <div style={{fontSize:13,color:"#A79A8D",textAlign:"center",padding:"24px 0"}}>
                     {auditSearch?"No results for that search":"No activity yet"}
                   </div>
                 ):(
@@ -2431,7 +2431,7 @@ function Dashboard({ session, profile, onLogout }) {
                       const dt=new Date(log.created_at);
                       const dateStr=dt.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"});
                       const timeStr=dt.toLocaleTimeString("en-NG",{hour:"2-digit",minute:"2-digit"});
-                      const actionColor=log.action?.toLowerCase().includes("delet")?"#ef4444":log.action?.toLowerCase().includes("approv")?"#22c55e":log.action?.toLowerCase().includes("reject")?"#f97316":"#c9a84c";
+                      const actionColor=log.action?.toLowerCase().includes("delet")?"#C04040":log.action?.toLowerCase().includes("approv")?"#B58C91":log.action?.toLowerCase().includes("reject")?"#9B4A58":"#B58C91";
                       const isGrouped=group.logs.length>1;
                       const isExpanded=expandedAuditGroup===group.id;
                       return (
@@ -2439,31 +2439,31 @@ function Dashboard({ session, profile, onLogout }) {
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",flex:1}}>
                               <span style={{fontSize:11,fontWeight:700,color:actionColor,background:`${actionColor}18`,border:`1px solid ${actionColor}30`,borderRadius:4,padding:"2px 7px",whiteSpace:"nowrap"}}>{log.action}</span>
-                              {isGrouped&&<span style={{fontSize:11,fontWeight:700,color:"#c9a84c",background:"rgba(201,168,76,0.12)",border:"1px solid rgba(201,168,76,0.25)",borderRadius:10,padding:"2px 8px"}}>×{group.logs.length} {isExpanded?"▲":"▼"}</span>}
-                              {!isGrouped&&leadName&&<span style={{fontSize:11,color:"#cbd5e1",fontWeight:600}}>· {leadName}</span>}
+                              {isGrouped&&<span style={{fontSize:11,fontWeight:700,color:"#B58C91",background:"rgba(181,140,145,0.12)",border:"1px solid rgba(181,140,145,0.25)",borderRadius:10,padding:"2px 8px"}}>×{group.logs.length} {isExpanded?"▲":"▼"}</span>}
+                              {!isGrouped&&leadName&&<span style={{fontSize:11,color:"#DDD8D0",fontWeight:600}}>· {leadName}</span>}
                             </div>
                             <div style={{textAlign:"right",flexShrink:0}}>
                               <div style={{fontSize:10,color:"#475569"}}>{dateStr}</div>
-                              <div style={{fontSize:10,color:"#1e3a5f"}}>{timeStr}</div>
+                              <div style={{fontSize:10,color:"#6B5558"}}>{timeStr}</div>
                             </div>
                           </div>
                           <div className="audit-meta" style={{marginTop:4}}>
-                            <span style={{color:"#60a5fa"}}>{log.user_name}</span>
-                            {!isGrouped&&d.from&&d.to&&<span style={{color:"#334155"}}> · {d.from} → {d.to}</span>}
-                            {!isGrouped&&d.count&&<span style={{color:"#334155"}}> · {d.count} leads</span>}
-                            {!isGrouped&&d.role&&<span style={{color:"#334155"}}> · role: {d.role}</span>}
-                            {isGrouped&&<span style={{color:"#334155"}}> · {group.logs.length} actions</span>}
+                            <span style={{color:"#C8BFB0"}}>{log.user_name}</span>
+                            {!isGrouped&&d.from&&d.to&&<span style={{color:"#A79A8D"}}> · {d.from} → {d.to}</span>}
+                            {!isGrouped&&d.count&&<span style={{color:"#A79A8D"}}> · {d.count} leads</span>}
+                            {!isGrouped&&d.role&&<span style={{color:"#A79A8D"}}> · role: {d.role}</span>}
+                            {isGrouped&&<span style={{color:"#A79A8D"}}> · {group.logs.length} actions</span>}
                           </div>
                           {isGrouped&&isExpanded&&(
-                            <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:4,paddingLeft:8,borderLeft:"2px solid rgba(201,168,76,0.2)"}}>
+                            <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:4,paddingLeft:8,borderLeft:"2px solid rgba(181,140,145,0.2)"}}>
                               {group.logs.map((sub,i)=>{
                                 const sd=sub.details||{};
                                 const sName=sd.name||sd.to||sd.email||sub.target_id||"";
                                 const sTime=new Date(sub.created_at).toLocaleTimeString("en-NG",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
                                 return(
-                                  <div key={sub.id||i} style={{fontSize:11,color:"#64748b",display:"flex",gap:8}}>
-                                    <span style={{color:"#334155",flexShrink:0}}>{sTime}</span>
-                                    {sName&&<span style={{color:"#94a3b8"}}>{sName}</span>}
+                                  <div key={sub.id||i} style={{fontSize:11,color:"#8A7678",display:"flex",gap:8}}>
+                                    <span style={{color:"#A79A8D",flexShrink:0}}>{sTime}</span>
+                                    {sName&&<span style={{color:"#C8BFB0"}}>{sName}</span>}
                                     {sd.from&&sd.to&&<span>{sd.from} → {sd.to}</span>}
                                   </div>
                                 );
